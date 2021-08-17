@@ -8,27 +8,31 @@ from material import *
 import math
 import random
 
+
+# switch to cpu if needed
 ti.init(arch=ti.gpu)
 
 
 @ti.func
 def get_background(dir):
+    ''' Returns the background color for a given direction vector '''
     unit_direction = dir.normalized()
     t = 0.5 * (unit_direction[1] + 1.0)
     return (1.0 - t) * WHITE + t * BLUE
 
 
 if __name__ == '__main__':
-    # image
+    # image data
     aspect_ratio = 3.0 / 2.0
     image_width = 1200
     image_height = int(image_width / aspect_ratio)
     rays = ray.Rays(image_width, image_height)
     pixels = ti.Vector.field(3, dtype=float)
-    #results = ray.HitRecord(image_width, image_height)
     sample_count = ti.field(dtype=ti.i32)
     needs_sample = ti.field(dtype=ti.i32)
-    ti.root.dense(ti.ij, (image_width, image_height)).place(pixels, sample_count, needs_sample)
+    ti.root.dense(ti.ij,
+                  (image_width, image_height)).place(pixels, sample_count,
+                                                     needs_sample)
 
     samples_per_pixel = 512
     max_depth = 16
@@ -48,15 +52,21 @@ if __name__ == '__main__':
     for a in range(-11, 11):
         for b in range(-11, 11):
             choose_mat = random.random()
-            center = Point(a + 0.9 * random.random(), 0.2, b + 0.9 * random.random())
+            center = Point(a + 0.9 * random.random(), 0.2,
+                           b + 0.9 * random.random())
 
             if (center - static_point).norm() > 0.9:
                 if choose_mat < 0.8:
                     # diffuse
-                    mat = Lambert(Color(random.random(), random.random(), random.random()) ** 2)
+                    mat = Lambert(
+                        Color(random.random(), random.random(),
+                              random.random())**2)
                 elif choose_mat < 0.95:
                     # metal
-                    mat = Metal(Color(random.random(), random.random(), random.random()) * 0.5 + 0.5, random.random() * 0.5)
+                    mat = Metal(
+                        Color(random.random(), random.random(),
+                              random.random()) * 0.5 + 0.5,
+                        random.random() * 0.5)
                 else:
                     mat = Dielectric(1.5)
 
@@ -78,13 +88,10 @@ if __name__ == '__main__':
     start_attenuation = Vector(1.0, 1.0, 1.0)
     initial = True
 
-   
     @ti.kernel
     def finish():
         for x, y in pixels:
             pixels[x, y] = ti.sqrt(pixels[x, y] / samples_per_pixel)
-
-
 
     @ti.kernel
     def wavefront_initial():
@@ -94,6 +101,13 @@ if __name__ == '__main__':
 
     @ti.kernel
     def wavefront_big() -> ti.i32:
+        ''' Loops over pixels
+            for each pixel:
+                generate ray if needed
+                intersect scene with ray
+                if miss or last bounce sample backgound
+            return pixels that hit max samples
+        '''
         num_completed = 0
         for x, y in pixels:
             if sample_count[x, y] == samples_per_pixel:
@@ -117,10 +131,12 @@ if __name__ == '__main__':
             # intersect
             hit, p, n, front_facing, index = world.hit_all(ray_org, ray_dir)
             depth -= 1
-            rays.depth[x,y] = depth
+            rays.depth[x, y] = depth
             if hit:
-                reflected, out_origin, out_direction, attenuation = world.materials.scatter(index, ray_dir, p, n, front_facing)
-                rays.set(x, y, out_origin, out_direction, depth, pdf * attenuation)
+                reflected, out_origin, out_direction, attenuation = world.materials.scatter(
+                    index, ray_dir, p, n, front_facing)
+                rays.set(x, y, out_origin, out_direction, depth,
+                         pdf * attenuation)
                 ray_dir = out_direction
 
             if not hit or depth == 0:

@@ -6,6 +6,7 @@ import random
 import numpy as np
 from bvh import BVH
 
+
 @ti.func
 def is_front_facing(ray_direction, normal):
     return ray_direction.dot(normal) < 0.0
@@ -13,16 +14,18 @@ def is_front_facing(ray_direction, normal):
 
 @ti.func
 def hit_sphere(center, radius, ray_origin, ray_direction, t_min, t_max):
+    ''' Intersect a sphere of given radius and center and return
+        if it hit and the least root. '''
     oc = ray_origin - center
     a = ray_direction.norm_sqr()
     half_b = oc.dot(ray_direction)
-    c = (oc.norm_sqr() - radius ** 2)
-    discriminant = (half_b ** 2) - a * c
+    c = (oc.norm_sqr() - radius**2)
+    discriminant = (half_b**2) - a * c
 
     hit = discriminant >= 0.0
     root = -1.0
     if hit:
-        sqrtd = discriminant ** 0.5
+        sqrtd = discriminant**0.5
         root = (-half_b - sqrtd) / a
 
         if root < t_min or t_max < root:
@@ -39,8 +42,14 @@ class Sphere:
         self.radius = radius
         self.material = material
         self.id = -1
-        self.box_min = [self.center[0] - radius, self.center[1] - radius, self.center[2] - radius]
-        self.box_max = [self.center[0] + radius, self.center[1] + radius, self.center[2] + radius]
+        self.box_min = [
+            self.center[0] - radius, self.center[1] - radius,
+            self.center[2] - radius
+        ]
+        self.box_max = [
+            self.center[0] + radius, self.center[1] + radius,
+            self.center[2] + radius
+        ]
 
     @property
     def bounding_box(self):
@@ -49,6 +58,8 @@ class Sphere:
 
 BRANCH = 1.0
 LEAF = 0.0
+
+
 @ti.data_oriented
 class World:
     def __init__(self):
@@ -59,6 +70,8 @@ class World:
         self.spheres.append(sphere)
 
     def commit(self):
+        ''' Commit should be called after all objects added.  
+            Will compile bvh and materials. '''
         self.n = len(self.spheres)
 
         self.materials = Materials(self.n)
@@ -81,6 +94,7 @@ class World:
 
     @ti.func
     def hit_all(self, ray_origin, ray_direction):
+        ''' Intersects a ray against all objects. '''
         hit_anything = False
         t_min = 0.0001
         closest_so_far = 9999999999.9
@@ -90,22 +104,24 @@ class World:
         front_facing = True
         i = 0
         curr = self.bvh.bvh_root
-        
+
+        # walk the bvh tree
         while curr != -1:
             obj_id, left_id, right_id, next_id = self.bvh.get_full_id(curr)
 
             if obj_id != -1:
                 # this is a leaf node, check the sphere
                 hit, t = hit_sphere(self.center[obj_id], self.radius[obj_id],
-                                    ray_origin, ray_direction, t_min, closest_so_far)
+                                    ray_origin, ray_direction, t_min,
+                                    closest_so_far)
                 if hit:
                     hit_anything = True
                     closest_so_far = t
                     hit_index = obj_id
                 curr = next_id
             else:
-                if self.bvh.hit_aabb(curr, ray_origin, ray_direction,
-                                     t_min, closest_so_far):
+                if self.bvh.hit_aabb(curr, ray_origin, ray_direction, t_min,
+                                     closest_so_far):
                     # add left and right children
                     if left_id != -1:
                         curr = left_id
@@ -126,4 +142,5 @@ class World:
 
     @ti.func
     def scatter(self, ray_direction, p, n, front_facing, index):
+        ''' Get the scattered direction for a ray hitting an object '''
         return self.materials.scatter(index, ray_direction, p, n, front_facing)
