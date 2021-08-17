@@ -1,7 +1,7 @@
 # ray-tracing-one-weekend-taichi
 A fast python implementation of Ray Tracing in One Weekend using python and Taichi
 
-![Lots o' balls](https://github.com/bsavery/ray-tracing-one-weekend-taichi/blob/[branch]/out.png?raw=true)
+![Lots o' balls](https://github.com/bsavery/ray-tracing-one-weekend-taichi/blob/main/out.png?raw=true)
 
 Goes up to Ray tracing "The next week" with the BVH implementation.
 
