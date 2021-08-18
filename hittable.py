@@ -80,7 +80,7 @@ class World:
         self.center = ti.Vector.field(3, dtype=ti.f32)
         ti.root.dense(ti.i, self.n).place(self.radius, self.center)
 
-        self.bvh.build(self.spheres)
+        self.bvh.build()
 
         for i in range(self.n):
             self.center[i] = self.spheres[i].center
