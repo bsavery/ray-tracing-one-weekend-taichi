@@ -1,4 +1,5 @@
 import taichi as ti
+from vector import *
 
 
 # First we init taichi.  You can select CPU or GPU, or specify CUDA, Metal, etc
@@ -17,7 +18,7 @@ pixels = ti.Vector.field(n=3, dtype=ti.f32, shape=(IMAGE_WIDTH, IMAGE_HEIGHT))
 @ti.kernel
 def fill_pixels():
     for i, j in pixels:
-        pixels[i, j] = [i / (IMAGE_WIDTH - 1), j / (IMAGE_HEIGHT - 1), 0.25]
+        pixels[i, j] = Color(i / (IMAGE_WIDTH - 1), j / (IMAGE_HEIGHT - 1), 0.25)
 
 
 if __name__ == '__main__':
