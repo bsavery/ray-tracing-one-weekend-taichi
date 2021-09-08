@@ -1,6 +1,7 @@
 import taichi as ti
 from vector import *
 from ray import Ray
+import ray
 
 
 # First we init taichi.  You can select CPU or GPU, or specify CUDA, Metal, etc
@@ -31,20 +32,25 @@ pixels = ti.Vector.field(n=3, dtype=ti.f32, shape=(IMAGE_WIDTH, IMAGE_HEIGHT))
 @ti.func
 def hit_sphere(center, radius, r):
     oc = r.orig - center
-    a = r.dir.dot(r.dir)
-    b = 2.0 * oc.dot(r.dir)
-    c = oc.dot(oc) - radius * radius
-    discriminant = b * b - 4 * a * c
-    return (discriminant > 0)
+    a = r.dir.norm_sqr()
+    half_b = oc.dot(r.dir)
+    c = oc.norm_sqr() - radius ** 2
+    discriminant = half_b ** 2 - a * c
+    hit_point = -1.0
+    if discriminant >= 0:
+        hit_point = (-half_b - ti.sqrt(discriminant)) / a
+    return hit_point
 
 
 # A Taichi function that returns a color gradient of the background based on
 # the ray direction.
 @ti.func
 def ray_color(r):
-    color = Color(0.0)  # Taichi functions can only have on return call
-    if hit_sphere(Point(0.0, 0.0, -1.0), 0.5, r):
-        color = Color(1.0, 0.0, 0.0)
+    color = Color(0.0)  # Taichi functions can only have one return call
+    t = hit_sphere(Point(0.0, 0.0, -1.0), 0.5, r)
+    if t > 0.0:
+        N = (ray.at(r, t) - Vector(0.0, 0.0, -1.0)).normalized()
+        color = 0.5 * (N + 1.0)
     else:
         unit_direction = r.dir.normalized()
         t = 0.5 * (unit_direction.y + 1.0)
