@@ -27,13 +27,29 @@ LOWER_LEFT_CORNER = ORIGIN - HORIZONTAL/2.0 - VERTICAL/2.0 - Vector(0.0, 0.0, FO
 pixels = ti.Vector.field(n=3, dtype=ti.f32, shape=(IMAGE_WIDTH, IMAGE_HEIGHT))
 
 
+# Checks a ray intersection with sphere
+@ti.func
+def hit_sphere(center, radius, r):
+    oc = r.orig - center
+    a = r.dir.dot(r.dir)
+    b = 2.0 * oc.dot(r.dir)
+    c = oc.dot(oc) - radius * radius
+    discriminant = b * b - 4 * a * c
+    return (discriminant > 0)
+
+
 # A Taichi function that returns a color gradient of the background based on
-# the ray direction
+# the ray direction.
 @ti.func
 def ray_color(r):
-    unit_direction = r.dir.normalized()
-    t = 0.5 * (unit_direction.y + 1.0)
-    return (1.0 - t) * Color(1.0, 1.0, 1.0) + t * Color(0.5, 0.7, 1.0)
+    color = Color(0.0)  # Taichi functions can only have on return call
+    if hit_sphere(Point(0.0, 0.0, -1.0), 0.5, r):
+        color = Color(1.0, 0.0, 0.0)
+    else:
+        unit_direction = r.dir.normalized()
+        t = 0.5 * (unit_direction.y + 1.0)
+        color = (1.0 - t) * Color(1.0, 1.0, 1.0) + t * Color(0.5, 0.7, 1.0)
+    return color
 
 
 # Our "kernel".  This loops over all the pixels in a parallel manner
