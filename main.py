@@ -4,6 +4,7 @@ import taichi as ti
 from vector import *
 from ray import Ray
 from camera import Camera
+import time
 
 
 # First we init taichi.  You can select CPU or GPU, or specify CUDA, Metal, etc
@@ -14,6 +15,7 @@ ASPECT_RATIO = 16.0 / 9.0
 IMAGE_WIDTH = 400
 IMAGE_HEIGHT = int(IMAGE_WIDTH / ASPECT_RATIO)
 SAMPLES_PER_PIXEL = 100
+MAX_DEPTH = 50
 
 INFINITY = 99999999.9
 
@@ -32,13 +34,29 @@ cam = Camera(ASPECT_RATIO)
 def ray_color(r, world):
     color = Color(0.0)  # Taichi functions can only have one return call
     rec = HitRecord(p=Point(0.0), normal=Vector(0.0), t=0.0, front_face=1)
-    if world.hit(r, 0.0, INFINITY, rec):
-        color = 0.5 * (rec.normal + 1.0)
-    else:
-        unit_direction = r.dir.normalized()
-        t = 0.5 * (unit_direction.y + 1.0)
-        color = (1.0 - t) * Color(1.0, 1.0, 1.0) + t * Color(0.5, 0.7, 1.0)
+    accumulated_color = 1.0
+    bounces = 1
+
+    # Recursion does not work in taichi so we have to do a while loop
+    while bounces < MAX_DEPTH:
+        if world.hit(r, 0.0001, INFINITY, rec):
+            # increment accumulated color and set next ray orig, dir
+            accumulated_color *= 0.5
+            target = rec.p + random_in_hemi_sphere(rec.normal)
+            r.orig = rec.p
+            r.dir = target - rec.p
+            bounces += 1
+        else:
+            unit_direction = r.dir.normalized()
+            t = 0.5 * (unit_direction.y + 1.0)
+            color = accumulated_color * ((1.0 - t) * Color(1.0, 1.0, 1.0) + t * Color(0.5, 0.7, 1.0))
+            break
     return color
+
+
+def get_buffer(samples):
+    ''' Do gamma and divide accumulated buffer by samples '''
+    return (pixels.to_numpy() / samples) ** 0.5
 
 
 # Our "kernel".  This loops over all the samples for a pixel in a parallel manner
@@ -54,13 +72,15 @@ def render_pass():
 if __name__ == '__main__':
     gui = ti.GUI("Ray Tracing in One Weekend", res=(IMAGE_WIDTH, IMAGE_HEIGHT))
 
+    t = time.time()
     # Run the kernel once for each sample
     for i in range(SAMPLES_PER_PIXEL):
         render_pass()
 
-        gui.set_image(pixels.to_numpy() / (i + 1))
+        gui.set_image(get_buffer(i + 1))
         gui.show()  # show in GUI
         print("\rPercent Complete\t:{:.2%}".format((i + 1)/SAMPLES_PER_PIXEL), end='')
 
-    gui.set_image(pixels.to_numpy() / SAMPLES_PER_PIXEL)
+    print("\nRender time", time.time() - t)
+    gui.set_image(get_buffer(SAMPLES_PER_PIXEL))
     gui.show('out.png')
