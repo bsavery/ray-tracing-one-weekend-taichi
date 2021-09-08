@@ -1,7 +1,9 @@
+from taichi.lang.ops import random
 from hittable import HittableList, Sphere, HitRecord
 import taichi as ti
 from vector import *
 from ray import Ray
+from camera import Camera
 
 
 # First we init taichi.  You can select CPU or GPU, or specify CUDA, Metal, etc
@@ -11,16 +13,7 @@ ti.init(arch=ti.gpu)
 ASPECT_RATIO = 16.0 / 9.0
 IMAGE_WIDTH = 400
 IMAGE_HEIGHT = int(IMAGE_WIDTH / ASPECT_RATIO)
-
-# camera position and orientation
-VIEWPORT_HEIGHT = 2.0
-VIEWPORT_WIDTH = ASPECT_RATIO * VIEWPORT_HEIGHT
-FOCAL_LENGTH = 1.0
-
-ORIGIN = Point(0.0, 0.0, 0.0)
-HORIZONTAL = Vector(VIEWPORT_WIDTH, 0.0, 0.0)
-VERTICAL = Vector(0, VIEWPORT_HEIGHT, 0.0)
-LOWER_LEFT_CORNER = ORIGIN - HORIZONTAL/2.0 - VERTICAL/2.0 - Vector(0.0, 0.0, FOCAL_LENGTH)
+SAMPLES_PER_PIXEL = 100
 
 INFINITY = 99999999.9
 
@@ -31,6 +24,7 @@ pixels = ti.Vector.field(n=3, dtype=ti.f32, shape=(IMAGE_WIDTH, IMAGE_HEIGHT))
 world = HittableList()
 world.add(Sphere(Point(0.0, 0.0, -1.0), 0.5))
 world.add(Sphere(Point(0.0, -100.5, -1), 100.0))
+cam = Camera(ASPECT_RATIO)
 
 # A Taichi function that returns a color gradient of the background based on
 # the ray direction.
@@ -47,22 +41,26 @@ def ray_color(r, world):
     return color
 
 
-# Our "kernel".  This loops over all the pixels in a parallel manner
+# Our "kernel".  This loops over all the samples for a pixel in a parallel manner
 # We don't multiply by 256 as in the original code since we use floats
 @ti.kernel
-def fill_pixels():
+def render_pass():
     for i, j in pixels:
-        u, v = i / (IMAGE_WIDTH - 1), j / (IMAGE_HEIGHT - 1)
-        ray = Ray(orig=ORIGIN, dir=(LOWER_LEFT_CORNER + u * HORIZONTAL + v * VERTICAL - ORIGIN))
-        pixels[i, j] = ray_color(ray, world)
+        u, v = (i + ti.random()) / (IMAGE_WIDTH - 1), (j + ti.random()) / (IMAGE_HEIGHT - 1)
+        ray = cam.get_ray(u, v)
+        pixels[i, j] += ray_color(ray, world)
 
 
 if __name__ == '__main__':
     gui = ti.GUI("Ray Tracing in One Weekend", res=(IMAGE_WIDTH, IMAGE_HEIGHT))
 
-    # Run the kernel
-    fill_pixels()
+    # Run the kernel once for each sample
+    for i in range(SAMPLES_PER_PIXEL):
+        render_pass()
 
-    gui.set_image(pixels)
-    gui.show("out.png")  # export and show in GUI
+        gui.set_image(pixels.to_numpy() / (i + 1))
+        gui.show()  # show in GUI
+        print("\rPercent Complete\t:{:.2%}".format((i + 1)/SAMPLES_PER_PIXEL), end='')
 
+    gui.set_image(pixels.to_numpy() / SAMPLES_PER_PIXEL)
+    gui.show('out.png')
