@@ -5,6 +5,7 @@ from vector import *
 from ray import Ray
 from camera import Camera
 import time
+from material import *
 
 
 # First we init taichi.  You can select CPU or GPU, or specify CUDA, Metal, etc
@@ -23,33 +24,44 @@ INFINITY = 99999999.9
 # We specify the type and size of the field with 3 channels for RGB
 # I set this up with floating point because it will be nicer in the future.
 pixels = ti.Vector.field(n=3, dtype=ti.f32, shape=(IMAGE_WIDTH, IMAGE_HEIGHT))
+
 world = HittableList()
-world.add(Sphere(Point(0.0, 0.0, -1.0), 0.5))
-world.add(Sphere(Point(0.0, -100.5, -1), 100.0))
+material_ground = Lambert(Color(0.8, 0.8, 0.0))
+material_center = Lambert(Color(0.1, 0.2, 0.5))
+material_left = Dielectric(1.5)
+material_right = Metal(Color(0.8, 0.6, 0.2), 0.0)
+
+world.add(Sphere(Point(0.0, 0.0, -1.0), 0.5, material_center))
+world.add(Sphere(Point(-1.0, 0.0, -1.0), 0.5, material_left))
+world.add(Sphere(Point(-1.0, 0.0, -1.0), -0.4, material_left))
+world.add(Sphere(Point(1.0, 0.0, -1.0), 0.5, material_right))
+world.add(Sphere(Point(0.0, -100.5, -1), 100.0, material_ground))
+
 cam = Camera(ASPECT_RATIO)
 
 # A Taichi function that returns a color gradient of the background based on
 # the ray direction.
 @ti.func
 def ray_color(r, world):
-    color = Color(0.0)  # Taichi functions can only have one return call
-    rec = HitRecord(p=Point(0.0), normal=Vector(0.0), t=0.0, front_face=1)
-    accumulated_color = 1.0
+    color = Color(1.0)  # Taichi functions can only have one return call
     bounces = 1
 
     # Recursion does not work in taichi so we have to do a while loop
     while bounces < MAX_DEPTH:
-        if world.hit(r, 0.0001, INFINITY, rec):
-            # increment accumulated color and set next ray orig, dir
-            accumulated_color *= 0.5
-            target = rec.p + random_in_hemi_sphere(rec.normal)
-            r.orig = rec.p
-            r.dir = target - rec.p
-            bounces += 1
+        hit, rec, mat_info = world.hit(r, 0.0001, INFINITY)
+        if hit:
+            scattered, out_ray, attenuation = scatter(mat_info, r.dir, rec)
+            if scattered:
+                color *= attenuation
+                r = out_ray
+                bounces += 1
+            else:
+                color = Color(0.0)
+                break
         else:
             unit_direction = r.dir.normalized()
             t = 0.5 * (unit_direction.y + 1.0)
-            color = accumulated_color * ((1.0 - t) * Color(1.0, 1.0, 1.0) + t * Color(0.5, 0.7, 1.0))
+            color = color * ((1.0 - t) * Color(1.0, 1.0, 1.0) + t * Color(0.5, 0.7, 1.0))
             break
     return color
 

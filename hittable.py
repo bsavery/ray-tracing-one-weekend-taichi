@@ -1,10 +1,17 @@
 import taichi as ti
 from vector import *
 import ray
+from material import empty_material_info
 
 
 # struct for hittable records
 HitRecord = ti.types.struct(p=Point, normal=Vector, t=ti.f32, front_face=ti.i32)
+
+@ti.func
+def empty_hit_record():
+    ''' Constructs an empty hit record'''
+    return HitRecord(p=Point(0.0), normal=Vector(0.0), t=0.0, front_face=1)
+
 
 @ti.func
 def set_face_normal(r, outward_normal, rec: ti.template()):
@@ -16,15 +23,17 @@ def set_face_normal(r, outward_normal, rec: ti.template()):
 @ti.data_oriented
 class Sphere:
     ''' A class for holding data for a sphere. '''
-    def __init__(self, center, radius):
+    def __init__(self, center, radius, material):
         self.center = center
         self.radius = radius
+        self.material = material
 
     @ti.func
-    def hit(self, r, t_min, t_max, rec: ti.template()):
+    def hit(self, r, t_min, t_max):
         ''' Intersect a ray with a given center and radius.
             Note we pass in the hit record by reference. '''
         hit = False
+        rec = empty_hit_record()
 
         oc = r.orig - self.center
         a = r.dir.norm_sqr()
@@ -47,7 +56,7 @@ class Sphere:
                 outward_normal = (rec.p - self.center) / self.radius
                 set_face_normal(r, outward_normal, rec)
 
-        return hit
+        return hit, rec
 
 
 @ti.data_oriented
@@ -59,19 +68,20 @@ class HittableList:
         self.objects.append(object)
 
     @ti.func
-    def hit(self, r, t_min, t_max, rec: ti.template()):
+    def hit(self, r, t_min, t_max):
         hit_anything = False
         closest_so_far = t_max
-        temp_rec = HitRecord(p=Point(0.0), normal=Vector(0.0), t=0.0, front_face=1)
+        rec = empty_hit_record()
+        mat_info = empty_material_info()
 
         for i in ti.static(range(len(self.objects))):
-            if self.objects[i].hit(r, t_min, closest_so_far, temp_rec):
+            hit, temp_rec = self.objects[i].hit(r, t_min, closest_so_far)
+            if hit:
                 hit_anything = True
                 closest_so_far = temp_rec.t
-                # have to manually copy the hit record
-                rec.p = temp_rec.p
-                rec.normal = temp_rec.normal
-                rec.t = temp_rec.t
-                rec.front_face = temp_rec.front_face
+                rec = temp_rec
+                # we return the material info not the material because
+                # taichi doesn't yet deal with assigning object pointers
+                mat_info = self.objects[i].material.mat_info
 
-        return hit_anything
+        return hit_anything, rec, mat_info

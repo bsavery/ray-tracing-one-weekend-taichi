@@ -20,3 +20,9 @@ def random_in_hemi_sphere(normal):
         vec = -vec
 
     return vec
+
+
+@ti.func
+def near_zero(vec):
+    eps = 1e-8
+    return abs(vec.x) < eps and abs(vec.y) < eps and abs(vec.z) < eps
