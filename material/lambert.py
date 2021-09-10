@@ -9,11 +9,11 @@ def Lambert(color):
 
 
 @ti.func
-def scatter(mat_info, in_direction, rec):
+def scatter(mat_info, ray_in, rec):
     '''' Lambrertian scattering '''
     out_direction = rec.normal + random_in_unit_sphere()
 
     if near_zero(out_direction):
         vec = rec.normal
 
-    return True, Ray(orig=rec.p, dir=out_direction), mat_info.color
+    return True, Ray(orig=rec.p, dir=out_direction, time=ray_in.time), mat_info.color

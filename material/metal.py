@@ -9,10 +9,10 @@ def Metal(color, roughness):
 
 
 @ti.func
-def scatter(mat_info, in_direction, rec):
+def scatter(mat_info, ray_in, rec):
     ''' Metal scattering '''
-    out_direction = reflect(in_direction.normalized(),
+    out_direction = reflect(ray_in.dir.normalized(),
                             rec.normal) + mat_info.roughness * random_in_unit_sphere()
     attenuation = mat_info.color
     reflected = out_direction.dot(rec.normal) > 0.0
-    return reflected, Ray(orig=rec.p, dir=out_direction), attenuation
+    return reflected, Ray(orig=rec.p, dir=out_direction, time=ray_in.time), attenuation

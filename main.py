@@ -1,5 +1,5 @@
 from taichi.lang.ops import random
-from hittable import HittableList, Sphere, HitRecord
+from hittable import HittableList, Sphere, MovingSphere, HitRecord
 import taichi as ti
 from vector import *
 from ray import Ray
@@ -31,16 +31,19 @@ def random_scene():
                     mat = Lambert(
                         Color(random.random(), random.random(),
                               random.random())**2)
+                    center2 = center + Vector(0.0, random.random() * 0.5, 0.0)
+                    world.add(MovingSphere(center, center2, 0.2, mat, 0.0, 1.0))
                 elif choose_mat < 0.95:
                     # metal
                     mat = Metal(
                         Color(random.random(), random.random(),
                               random.random()) * 0.5 + 0.5,
                         random.random() * 0.5)
+                    world.add(Sphere(center, 0.2, mat))
                 else:
                     mat = Dielectric(1.5)
-
-            world.add(Sphere(center, 0.2, mat))
+                    world.add(Sphere(center, 0.2, mat))
+            
 
     material_1 = Dielectric(1.5)
     world.add(Sphere(Point(0.0, 1.0, 0.0), 1.0, material_1))
@@ -55,10 +58,10 @@ def random_scene():
 
 
 # Setup image data
-ASPECT_RATIO = 3.0 / 2.0
-IMAGE_WIDTH = 1200
+ASPECT_RATIO = 16.0 / 9.0
+IMAGE_WIDTH = 400
 IMAGE_HEIGHT = int(IMAGE_WIDTH / ASPECT_RATIO)
-SAMPLES_PER_PIXEL = 500
+SAMPLES_PER_PIXEL = 100
 MAX_DEPTH = 50
 
 INFINITY = 99999999.9
@@ -75,7 +78,7 @@ at = Point(0.0, 0.0, 0.0)
 up = Vector(0.0, 1.0, 0.0)
 focus_dist = 10.0
 aperture = 0.1
-cam = Camera(vfrom, at, up, 20.0, ASPECT_RATIO, aperture, focus_dist)
+cam = Camera(vfrom, at, up, 20.0, ASPECT_RATIO, aperture, focus_dist, 0.0, 1.0)
 
 # A Taichi function that returns a color gradient of the background based on
 # the ray direction.
@@ -88,7 +91,7 @@ def ray_color(r, world):
     while bounces < MAX_DEPTH:
         hit, rec, mat_info = world.hit(r, 0.0001, INFINITY)
         if hit:
-            scattered, out_ray, attenuation = scatter(mat_info, r.dir, rec)
+            scattered, out_ray, attenuation = scatter(mat_info, r, rec)
             if scattered:
                 color *= attenuation
                 r = out_ray
