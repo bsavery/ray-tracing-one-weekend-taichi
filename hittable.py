@@ -1,7 +1,7 @@
 import taichi as ti
 from vector import *
 import ray
-from material import MaterialInfo, empty_material_info
+from material import Material, empty_material
 
 
 # struct for hittable records
@@ -20,32 +20,24 @@ def set_face_normal(r, outward_normal, rec: ti.template()):
     rec.normal = outward_normal if rec.front_face == 1 else -outward_normal
 
 
-# struct for hittable records
-SphereInfo = ti.types.struct(center=Point, radius=ti.f32)
+# struct for sphere
+Sphere = ti.types.struct(center=Point, radius=ti.f32, material=Material)
 
 
-class Sphere:
-    ''' A class for holding data for a sphere. '''
-    def __init__(self, center, radius, material):
-        self.center = center
-        self.radius = radius
-        self.material = material
+def create_sphere(center, radius, material):
+    return Sphere(center=center, radius=radius, material=material)
 
-    def get_info(self):
-        return SphereInfo(center=self.center, radius=self.radius), self.material.mat_info
-
-    @staticmethod
-    @ti.func
-    def hit(sphere_info, r, t_min, t_max):
+@ti.func
+def hit_sphere(sphere, r, t_min, t_max):
         ''' Intersect a ray with a given center and radius.
             Note we pass in the hit record by reference. '''
         hit = False
         rec = empty_hit_record()
 
-        oc = r.orig - sphere_info.center
+        oc = r.orig - sphere.center
         a = r.dir.norm_sqr()
         half_b = oc.dot(r.dir)
-        c = oc.norm_sqr() - sphere_info.radius ** 2
+        c = oc.norm_sqr() - sphere.radius ** 2
 
         discriminant = half_b ** 2 - a * c
         # check hit only if discriminint is > 0
@@ -60,7 +52,7 @@ class Sphere:
             if hit:
                 rec.t = root
                 rec.p = ray.at(r, rec.t)
-                outward_normal = (rec.p - sphere_info.center) / sphere_info.radius
+                outward_normal = (rec.p - sphere.center) / sphere.radius
                 set_face_normal(r, outward_normal, rec)
 
         return hit, rec
@@ -77,29 +69,26 @@ class HittableList:
     def commit(self):
         ''' Save the sphere data and material info so we can loop over these.'''
         self.n = len(self.objects)
-        self.sphere_infos = SphereInfo.field(shape=(self.n,))
-        self.mat_infos = MaterialInfo.field(shape=(self.n,))
+        self.spheres = Sphere.field(shape=(self.n,))
 
         for i, sphere in enumerate(self.objects):
-            sphere_info, mat_info = sphere.get_info()
-            self.sphere_infos[i] = sphere_info
-            self.mat_infos[i] = mat_info
+            self.spheres[i] = sphere
 
     @ti.func
     def hit(self, r, t_min, t_max):
         hit_anything = False
         closest_so_far = t_max
         rec = empty_hit_record()
-        mat_info = empty_material_info()
+        mat_info = empty_material()
 
         for i in range(self.n):
-            hit, temp_rec = Sphere.hit(self.sphere_infos[i], r, t_min, closest_so_far)
+            hit, temp_rec = hit_sphere(self.spheres[i], r, t_min, closest_so_far)
             if hit:
                 hit_anything = True
                 closest_so_far = temp_rec.t
                 rec = temp_rec
                 # we return the material info not the material because
                 # taichi doesn't yet deal with assigning object pointers
-                mat_info = self.mat_infos[i]
+                mat_info = self.spheres[i].material
 
         return hit_anything, rec, mat_info

@@ -1,5 +1,5 @@
 from taichi.lang.ops import random
-from hittable import HittableList, Sphere, HitRecord
+from hittable import HittableList, Sphere, HitRecord, create_sphere
 import taichi as ti
 from vector import *
 from ray import Ray
@@ -16,7 +16,7 @@ def random_scene():
     world = HittableList()
 
     material_ground = Lambert(Color(0.5, 0.5, 0.5))
-    world.add(Sphere(Point(0.0, -1000.0, 0.0), 1000.0, material_ground))
+    world.add(create_sphere(Point(0.0, -1000.0, 0.0), 1000.0, material_ground))
 
     static_point = Point(4.0, 0.2, 0.0)
     for a in range(-11, 11):
@@ -40,16 +40,16 @@ def random_scene():
                 else:
                     mat = Dielectric(1.5)
 
-            world.add(Sphere(center, 0.2, mat))
+            world.add(create_sphere(center, 0.2, mat))
 
     material_1 = Dielectric(1.5)
-    world.add(Sphere(Point(0.0, 1.0, 0.0), 1.0, material_1))
+    world.add(create_sphere(Point(0.0, 1.0, 0.0), 1.0, material_1))
 
     material_2 = Lambert(Color(0.4, 0.2, 0.1))
-    world.add(Sphere(Point(-4.0, 1.0, 0.0), 1.0, material_2))
+    world.add(create_sphere(Point(-4.0, 1.0, 0.0), 1.0, material_2))
 
     material_3 = Metal(Color(0.7, 0.6, 0.5), 0.0)
-    world.add(Sphere(Point(4.0, 1.0, 0.0), 1.0, material_3))
+    world.add(create_sphere(Point(4.0, 1.0, 0.0), 1.0, material_3))
 
     return world
 
