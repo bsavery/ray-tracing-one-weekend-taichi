@@ -6,16 +6,59 @@ from ray import Ray
 from camera import Camera
 import time
 from material import *
-
+import random
 
 # First we init taichi.  You can select CPU or GPU, or specify CUDA, Metal, etc
 ti.init(arch=ti.gpu)
 
+
+def random_scene():
+    world = HittableList()
+
+    material_ground = Lambert(Color(0.5, 0.5, 0.5))
+    world.add(Sphere(Point(0.0, -1000.0, 0.0), 1000.0, material_ground))
+
+    static_point = Point(4.0, 0.2, 0.0)
+    for a in range(-11, 11):
+        for b in range(-11, 11):
+            choose_mat = random.random()
+            center = Point(a + 0.9 * random.random(), 0.2,
+                           b + 0.9 * random.random())
+
+            if (center - static_point).norm() > 0.9:
+                if choose_mat < 0.8:
+                    # diffuse
+                    mat = Lambert(
+                        Color(random.random(), random.random(),
+                              random.random())**2)
+                elif choose_mat < 0.95:
+                    # metal
+                    mat = Metal(
+                        Color(random.random(), random.random(),
+                              random.random()) * 0.5 + 0.5,
+                        random.random() * 0.5)
+                else:
+                    mat = Dielectric(1.5)
+
+            world.add(Sphere(center, 0.2, mat))
+
+    material_1 = Dielectric(1.5)
+    world.add(Sphere(Point(0.0, 1.0, 0.0), 1.0, material_1))
+
+    material_2 = Lambert(Color(0.4, 0.2, 0.1))
+    world.add(Sphere(Point(-4.0, 1.0, 0.0), 1.0, material_2))
+
+    material_3 = Metal(Color(0.7, 0.6, 0.5), 0.0)
+    world.add(Sphere(Point(4.0, 1.0, 0.0), 1.0, material_3))
+
+    return world
+
+
 # Setup image data
-ASPECT_RATIO = 16.0 / 9.0
-IMAGE_WIDTH = 400
+ASPECT_RATIO = 3.0 / 2.0
+IMAGE_WIDTH = 1200
 IMAGE_HEIGHT = int(IMAGE_WIDTH / ASPECT_RATIO)
-SAMPLES_PER_PIXEL = 100
+SAMPLES_PER_PIXEL = 500
 MAX_DEPTH = 50
 
 INFINITY = 99999999.9
@@ -25,22 +68,14 @@ INFINITY = 99999999.9
 # I set this up with floating point because it will be nicer in the future.
 pixels = ti.Vector.field(n=3, dtype=ti.f32, shape=(IMAGE_WIDTH, IMAGE_HEIGHT))
 
-world = HittableList()
-material_ground = Lambert(Color(0.8, 0.8, 0.0))
-material_center = Lambert(Color(0.1, 0.2, 0.5))
-material_left = Dielectric(1.5)
-material_right = Metal(Color(0.8, 0.6, 0.2), 0.0)
+world = random_scene()
 
-world.add(Sphere(Point(0.0, 0.0, -1.0), 0.5, material_center))
-world.add(Sphere(Point(-1.0, 0.0, -1.0), 0.5, material_left))
-world.add(Sphere(Point(-1.0, 0.0, -1.0), -0.4, material_left))
-world.add(Sphere(Point(1.0, 0.0, -1.0), 0.5, material_right))
-world.add(Sphere(Point(0.0, -100.5, -1), 100.0, material_ground))
-
-vfrom = Point(3.0, 3.0, 2.0)
-at = Point(0.0, 0.0, -1.0)
-focus_dist = (vfrom - at).norm()
-cam = Camera(vfrom, at, Vector(0.0, 1.0, 0.0), 20.0, ASPECT_RATIO, 2.0, focus_dist)
+vfrom = Point(13.0, 2.0, 3.0)
+at = Point(0.0, 0.0, 0.0)
+up = Vector(0.0, 1.0, 0.0)
+focus_dist = 10.0
+aperture = 0.1
+cam = Camera(vfrom, at, up, 20.0, ASPECT_RATIO, aperture, focus_dist)
 
 # A Taichi function that returns a color gradient of the background based on
 # the ray direction.
@@ -85,6 +120,8 @@ def render_pass():
 
 
 if __name__ == '__main__':
+    world.commit()
+
     gui = ti.GUI("Ray Tracing in One Weekend", res=(IMAGE_WIDTH, IMAGE_HEIGHT))
 
     t = time.time()
