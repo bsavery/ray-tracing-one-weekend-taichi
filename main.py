@@ -37,7 +37,10 @@ world.add(Sphere(Point(-1.0, 0.0, -1.0), -0.4, material_left))
 world.add(Sphere(Point(1.0, 0.0, -1.0), 0.5, material_right))
 world.add(Sphere(Point(0.0, -100.5, -1), 100.0, material_ground))
 
-cam = Camera(Point(-2.0, 2.0, 1.0), Point(0.0, 0.0, -1.0), Vector(0.0, 1.0, 0.0), 20.0, ASPECT_RATIO)
+vfrom = Point(3.0, 3.0, 2.0)
+at = Point(0.0, 0.0, -1.0)
+focus_dist = (vfrom - at).norm()
+cam = Camera(vfrom, at, Vector(0.0, 1.0, 0.0), 20.0, ASPECT_RATIO, 2.0, focus_dist)
 
 # A Taichi function that returns a color gradient of the background based on
 # the ray direction.

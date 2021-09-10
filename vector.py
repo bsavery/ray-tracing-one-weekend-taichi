@@ -8,6 +8,8 @@ Color = Vector
 Point = Vector
 
 
+
+
 @ti.func
 def random_in_unit_sphere():
     # handily, this function returns a normalized vec
@@ -26,3 +28,12 @@ def random_in_hemi_sphere(normal):
 def near_zero(vec):
     eps = 1e-8
     return abs(vec.x) < eps and abs(vec.y) < eps and abs(vec.z) < eps
+
+@ti.func
+def random_in_unit_disk():
+    p = Vector(0.0)
+    while True:
+        p = Vector(ti.random() * 2.0 - 1.0, ti.random() * 2.0 - 1, 0.0)
+        if p.norm() < 1:
+            break
+    return p

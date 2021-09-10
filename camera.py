@@ -6,7 +6,7 @@ import math
 @ti.data_oriented
 class Camera:
     ''' Camera class '''
-    def __init__(self, look_from, look_at, up, vfov, aspect_ratio):
+    def __init__(self, look_from, look_at, up, vfov, aspect_ratio, aperture, focus_dist):
         theta = math.radians(vfov)
         h = math.tan(theta/2.0)
 
@@ -15,18 +15,22 @@ class Camera:
         viewport_width = aspect_ratio * viewport_height
 
         w = (look_from - look_at).normalized()
-        u = up.cross(w).normalized()
-        v = w.cross(u)
+        self.u = up.cross(w).normalized()
+        self.v = w.cross(self.u)
 
         self.origin = look_from
-        self.horizontal = viewport_width * u
-        self.vertical = viewport_height * v
+        self.horizontal = focus_dist * viewport_width * self.u
+        self.vertical = focus_dist * viewport_height * self.v
         self.lower_left_corner = self.origin - self.horizontal/2.0 - \
-            self.vertical/2.0 - w
+            self.vertical/2.0 - focus_dist * w
+
+        self.lens_radius = aperture / 2.0
 
 
     @ti.func
     def get_ray(self, s, t):
-        ''' Computes random sample based on uv'''
-        return Ray(orig=self.origin, dir=(self.lower_left_corner + s*self.horizontal +
-                                          t*self.vertical - self.origin))
+        ''' Computes random sample based on st'''
+        rd = self.lens_radius * random_in_unit_disk()
+        offset = self.u * rd.x + self.v * rd.y
+        return Ray(orig=(self.origin + offset), dir=(self.lower_left_corner + s*self.horizontal +
+                                                     t*self.vertical - self.origin - offset))
