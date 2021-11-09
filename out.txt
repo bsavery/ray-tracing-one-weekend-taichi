@@ -1,0 +1,2646 @@
+2021-09-15 11:58:29.301 Python[42805:5541835] Error Domain=MTLLibraryErrorDomain Code=3 "Compilation failed: 
+
+program_source:264:537: warning: variable declaration in a constexpr function is a C++14 extension
+constant constexpr int kMetalNumBitsPerPrintMsgType = 4; constant constexpr int kMetalNumPrintMsgTypePerI32 = sizeof(int32_t) * 8 / kMetalNumBitsPerPrintMsgType; constant constexpr int kMetalPrintMsgTypeWidthMask = ((1 << kMetalNumBitsPerPrintMsgType) - 1); [[maybe_unused]] constexpr inline int mtl_compute_num_print_msg_typemasks( int num_entries) { return (num_entries + kMetalNumPrintMsgTypePerI32 - 1) / kMetalNumPrintMsgTypePerI32; } [[maybe_unused]] constexpr inline int mtl_compute_print_msg_bytes( int num_entries) { const int sz = sizeof(int32_t) * (1 + mtl_compute_num_print_msg_typemasks(num_entries) + num_entries); return sz; } class PrintMsg { public: enum Type { I32 = 1, U32 = 2, F32 = 3, Str = 4 }; PrintMsg(device int32_t *buf, int num_entries) : mask_buf_(buf), data_buf_(buf + mtl_compute_num_print_msg_typemasks(num_entries)) { } void pm_set_i32(int i, int x) { set_entry(i, x, Type::I32); } void pm_set_u32(int i, uint x) { const int32_t ix = static_cast<int32_t>(x); set_entry(i, ix, Type::U32); } void pm_set_f32(int i, float x) { const int32_t ix = *reinterpret_cast<thread int32_t *>(&x); set_entry(i, ix, Type::F32); } void pm_set_str(int i, int str_id) { set_entry(i, str_id, Type::Str); } Type pm_get_type(int i) { const int mask_i = i / kMetalNumPrintMsgTypePerI32; const int i_in_mask = i % kMetalNumPrintMsgTypePerI32; int mask = mask_buf_[mask_i]; mask >>= typemask_shift(i_in_mask); mask &= kMetalPrintMsgTypeWidthMask; return (Type)mask; } int32_t pm_get_data(int i) { return data_buf_[i]; } private: void set_entry(int i, int32_t x, Type ty) { const int mask_i = i / kMetalNumPrintMsgTypePerI32; const int i_in_mask = i % kMetalNumPrintMsgTypePerI32; int mask = ((int)ty & kMetalPrintMsgTypeWidthMask); mask <<= typemask_shift(i_in_mask); mask_buf_[mask_i] |= mask; data_buf_[i] = x; } inline static int typemask_shift(int i_in_mask) { return (kMetalNumPrintMsgTypePerI32 - 1 - i_in_mask) * kMetalNumBitsPerPrintMsgType; } device int32_t *mask_buf_; device int32_t *data_buf_; }; struct AssertRecorderData { atomic_int flag; int32_t num_args; }; class AssertRecorder { public: explicit AssertRecorder(device byte * addr) : ac_(reinterpret_cast<device AssertRecorderData *>(addr)) { } bool mark_first_failure() { return atomic_exchange_explicit(&(ac_->flag), 1, metal::memory_order_relaxed) == 0; } void set_num_args(int n) { ac_->num_args = n; } device int32_t *msg_buf_addr() { return reinterpret_cast<device int32_t *>(ac_ + 1); } private: device AssertRecorderData *ac_; }; constant constexpr int kMetalMaxNumAssertArgs = 64; constant constexpr int kMetalAssertBufferSize = sizeof(AssertRecorderData) + mtl_compute_print_msg_bytes(kMetalMaxNumAssertArgs); struct PrintMsgAllocator { atomic_int next; }; constant constexpr int kMetalPrintAssertBufferSize = 2 * 1024 * 1024; constant constexpr int kMetalPrintMsgsMaxQueueSize = kMetalPrintAssertBufferSize - sizeof(PrintMsgAllocator) - kMetalAssertBufferSize; [[maybe_unused]] device int32_t * mtl_print_alloc_buf(device PrintMsgAllocator *pa, int num_entries) { const int sz = mtl_compute_print_msg_bytes(num_entries); const int cur = atomic_fetch_add_explicit(&(pa->next), sz, metal::memory_order_relaxed); if (cur + sz >= kMetalPrintMsgsMaxQueueSize) { return (device int32_t *)0; } device byte *data_begin = reinterpret_cast<device byte *>(pa + 1); device int32_t *ptr = reinterpret_cast<device int32_t *>(data_begin + cur); *ptr = num_entries; return (ptr + 1); }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ^
+program_source:570:11: error: unknown type name 'S0_ch'
+          S0_ch tmp7175 = tmp7173.children(tmp20);
+          ^
+program_source:572:13: error: unknown type name 'S16'; did you mean 'S36'?
+            S16 tmp7176 = tmp7175.get2(runtime_, mem_alloc_);
+            ^~~
+            S36
+program_source:104:8: note: 'S36' declared here
+struct S36 {
+       ^
+program_source:574:13: error: unknown type name 'S16_ch'
+            S16_ch tmp7179 = tmp7176.children(tmp7537);
+            ^
+program_source:574:38: error: no member named 'children' in '(anonymous namespace)::S36'
+            S16_ch tmp7179 = tmp7176.children(tmp7537);
+                             ~~~~~~~ ^
+program_source:747:13: error: unknown type name 'S5'
+            S5 tmp7326 = tmp7175.get1(runtime_, mem_alloc_);
+            ^
+program_source:749:13: error: unknown type name 'S5_ch'
+            S5_ch tmp7329 = tmp7326.children(tmp7597);
+            ^
+program_source:1196:5: error: unknown type name 'S0_ch'
+    S0_ch tmp7426 = tmp7424.children(tmp20);
+    ^
+program_source:1197:5: error: unknown type name 'S1'
+    S1 tmp7427 = tmp7426.get0(runtime_, mem_alloc_);
+    ^
+program_source:1200:5: error: unknown type name 'S1_ch'
+    S1_ch tmp7431 = tmp7427.children(tmp7697);
+    ^
+program_source:1230:16: warning: unused variable 'mem_alloc_'
+  device auto *mem_alloc_ = reinterpret_cast<device MemoryAllocator *>(runtime_ + 1);
+               ^
+" UserInfo={NSLocalizedDescription=Compilation failed: 
+
+program_source:264:537: warning: variable declaration in a constexpr function is a C++14 extension
+constant constexpr int kMetalNumBitsPerPrintMsgType = 4; constant constexpr int kMetalNumPrintMsgTypePerI32 = sizeof(int32_t) * 8 / kMetalNumBitsPerPrintMsgType; constant constexpr int kMetalPrintMsgTypeWidthMask = ((1 << kMetalNumBitsPerPrintMsgType) - 1); [[maybe_unused]] constexpr inline int mtl_compute_num_print_msg_typemasks( int num_entries) { return (num_entries + kMetalNumPrintMsgTypePerI32 - 1) / kMetalNumPrintMsgTypePerI32; } [[maybe_unused]] constexpr inline int mtl_compute_print_msg_bytes( int num_entries) { const int sz = sizeof(int32_t) * (1 + mtl_compute_num_print_msg_typemasks(num_entries) + num_entries); return sz; } class PrintMsg { public: enum Type { I32 = 1, U32 = 2, F32 = 3, Str = 4 }; PrintMsg(device int32_t *buf, int num_entries) : mask_buf_(buf), data_buf_(buf + mtl_compute_num_print_msg_typemasks(num_entries)) { } void pm_set_i32(int i, int x) { set_entry(i, x, Type::I32); } void pm_set_u32(int i, uint x) { const int32_t ix = static_cast<int32_t>(x); set_entry(i, ix, Type::U32); } void pm_set_f32(int i, float x) { const int32_t ix = *reinterpret_cast<thread int32_t *>(&x); set_entry(i, ix, Type::F32); } void pm_set_str(int i, int str_id) { set_entry(i, str_id, Type::Str); } Type pm_get_type(int i) { const int mask_i = i / kMetalNumPrintMsgTypePerI32; const int i_in_mask = i % kMetalNumPrintMsgTypePerI32; int mask = mask_buf_[mask_i]; mask >>= typemask_shift(i_in_mask); mask &= kMetalPrintMsgTypeWidthMask; return (Type)mask; } int32_t pm_get_data(int i) { return data_buf_[i]; } private: void set_entry(int i, int32_t x, Type ty) { const int mask_i = i / kMetalNumPrintMsgTypePerI32; const int i_in_mask = i % kMetalNumPrintMsgTypePerI32; int mask = ((int)ty & kMetalPrintMsgTypeWidthMask); mask <<= typemask_shift(i_in_mask); mask_buf_[mask_i] |= mask; data_buf_[i] = x; } inline static int typemask_shift(int i_in_mask) { return (kMetalNumPrintMsgTypePerI32 - 1 - i_in_mask) * kMetalNumBitsPerPrintMsgType; } device int32_t *mask_buf_; device int32_t *data_buf_; }; struct AssertRecorderData { atomic_int flag; int32_t num_args; }; class AssertRecorder { public: explicit AssertRecorder(device byte * addr) : ac_(reinterpret_cast<device AssertRecorderData *>(addr)) { } bool mark_first_failure() { return atomic_exchange_explicit(&(ac_->flag), 1, metal::memory_order_relaxed) == 0; } void set_num_args(int n) { ac_->num_args = n; } device int32_t *msg_buf_addr() { return reinterpret_cast<device int32_t *>(ac_ + 1); } private: device AssertRecorderData *ac_; }; constant constexpr int kMetalMaxNumAssertArgs = 64; constant constexpr int kMetalAssertBufferSize = sizeof(AssertRecorderData) + mtl_compute_print_msg_bytes(kMetalMaxNumAssertArgs); struct PrintMsgAllocator { atomic_int next; }; constant constexpr int kMetalPrintAssertBufferSize = 2 * 1024 * 1024; constant constexpr int kMetalPrintMsgsMaxQueueSize = kMetalPrintAssertBufferSize - sizeof(PrintMsgAllocator) - kMetalAssertBufferSize; [[maybe_unused]] device int32_t * mtl_print_alloc_buf(device PrintMsgAllocator *pa, int num_entries) { const int sz = mtl_compute_print_msg_bytes(num_entries); const int cur = atomic_fetch_add_explicit(&(pa->next), sz, metal::memory_order_relaxed); if (cur + sz >= kMetalPrintMsgsMaxQueueSize) { return (device int32_t *)0; } device byte *data_begin = reinterpret_cast<device byte *>(pa + 1); device int32_t *ptr = reinterpret_cast<device int32_t *>(data_begin + cur); *ptr = num_entries; return (ptr + 1); }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ^
+program_source:570:11: error: unknown type name 'S0_ch'
+          S0_ch tmp7175 = tmp7173.children(tmp20);
+          ^
+program_source:572:13: error: unknown type name 'S16'; did you mean 'S36'?
+            S16 tmp7176 = tmp7175.get2(runtime_, mem_alloc_);
+            ^~~
+            S36
+program_source:104:8: note: 'S36' declared here
+struct S36 {
+       ^
+program_source:574:13: error: unknown type name 'S16_ch'
+            S16_ch tmp7179 = tmp7176.children(tmp7537);
+            ^
+program_source:574:38: error: no member named 'children' in '(anonymous namespace)::S36'
+            S16_ch tmp7179 = tmp7176.children(tmp7537);
+                             ~~~~~~~ ^
+program_source:747:13: error: unknown type name 'S5'
+            S5 tmp7326 = tmp7175.get1(runtime_, mem_alloc_);
+            ^
+program_source:749:13: error: unknown type name 'S5_ch'
+            S5_ch tmp7329 = tmp7326.children(tmp7597);
+            ^
+program_source:1196:5: error: unknown type name 'S0_ch'
+    S0_ch tmp7426 = tmp7424.children(tmp20);
+    ^
+program_source:1197:5: error: unknown type name 'S1'
+    S1 tmp7427 = tmp7426.get0(runtime_, mem_alloc_);
+    ^
+program_source:1200:5: error: unknown type name 'S1_ch'
+    S1_ch tmp7431 = tmp7427.children(tmp7697);
+    ^
+program_source:1230:16: warning: unused variable 'mem_alloc_'
+  device auto *mem_alloc_ = reinterpret_cast<device MemoryAllocator *>(runtime_ + 1);
+               ^
+}
+[E 09/15/21 11:58:29.301 5541835] [kernel_manager.cpp:CompiledTaichiKernel@340] Failed to compile Metal kernel! Generated code:
+
+#include <metal_stdlib>
+#include <metal_compute>
+using namespace metal;
+namespace {
+using byte = char;
+
+template <typename T, typename G> T union_cast(G g) { static_assert(sizeof(T) == sizeof(G), "Size mismatch"); return *reinterpret_cast<thread const T *>(&g); } inline int ifloordiv(int lhs, int rhs) { const int intm = (lhs / rhs); return (((lhs < 0) != (rhs < 0) && lhs && (rhs * intm != lhs)) ? (intm - 1) : intm); } int32_t pow_i32(int32_t x, int32_t n) { int32_t tmp = x; int32_t ans = 1; while (n) { if (n & 1) ans *= tmp; tmp *= tmp; n >>= 1; } return ans; } float fatomic_fetch_add(device float *dest, const float operand) { bool ok = false; float old_val = 0.0f; while (!ok) { old_val = *dest; float new_val = (old_val + operand); ok = atomic_compare_exchange_weak_explicit( (device atomic_int *)dest, (thread int *)(&old_val), *((thread int *)(&new_val)), metal::memory_order_relaxed, metal::memory_order_relaxed); } return old_val; } float fatomic_fetch_min(device float *dest, const float operand) { bool ok = false; float old_val = 0.0f; while (!ok) { old_val = *dest; float new_val = (old_val < operand) ? old_val : operand; ok = atomic_compare_exchange_weak_explicit( (device atomic_int *)dest, (thread int *)(&old_val), *((thread int *)(&new_val)), metal::memory_order_relaxed, metal::memory_order_relaxed); } return old_val; } float fatomic_fetch_max(device float *dest, const float operand) { bool ok = false; float old_val = 0.0f; while (!ok) { old_val = *dest; float new_val = (old_val > operand) ? old_val : operand; ok = atomic_compare_exchange_weak_explicit( (device atomic_int *)dest, (thread int *)(&old_val), *((thread int *)(&new_val)), metal::memory_order_relaxed, metal::memory_order_relaxed); } return old_val; } struct RandState { uint32_t seed; }; uint32_t metal_rand_u32(device RandState * state) { device uint *sp = (device uint *)&(state->seed); bool done = false; uint32_t nxt = 0; while (!done) { uint32_t o = *sp; nxt = o * 1103515245 + 12345; done = atomic_compare_exchange_weak_explicit( (device atomic_uint *)sp, &o, nxt, metal::memory_order_relaxed, metal::memory_order_relaxed); } return nxt * 1000000007; } int32_t metal_rand_i32(device RandState * state) { return metal_rand_u32(state); } float metal_rand_f32(device RandState *state) { return metal_rand_u32(state) * (1.0f / 4294967296.0f); }
+
+constant constexpr int kTaichiMaxNumIndices = 8; constant constexpr int kTaichiNumChunks = 1024; constant constexpr int kAlignment = 8; using PtrOffset = int32_t; struct MemoryAllocator { atomic_int next; constant constexpr static int kInitOffset = 8; static inline bool is_valid(PtrOffset v) { return v >= kInitOffset; } }; struct ListManagerData { int32_t element_stride = 0; int32_t log2_num_elems_per_chunk = 0; atomic_int next; atomic_int chunks[kTaichiNumChunks]; struct ReservedElemPtrOffset { public: ReservedElemPtrOffset() = default; explicit ReservedElemPtrOffset(PtrOffset v) : val_(v) { } inline bool is_valid() const { return is_valid(val_); } inline static bool is_valid(PtrOffset v) { return MemoryAllocator::is_valid(v); } inline PtrOffset value() const { return val_; } private: PtrOffset val_{0}; }; }; struct NodeManagerData { using ElemIndex = ListManagerData::ReservedElemPtrOffset; ListManagerData data_list; ListManagerData free_list; ListManagerData recycled_list; atomic_int free_list_used; int recycled_list_size_backup; }; struct SNodeMeta { enum Type { Root = 0, Dense = 1, Bitmasked = 2, Dynamic = 3, Pointer = 4, BitStruct = 5, }; int32_t element_stride = 0; int32_t num_slots = 0; int32_t mem_offset_in_parent = 0; int32_t type = 0; }; struct SNodeExtractors { struct Extractor { int32_t start = 0; int32_t num_bits = 0; int32_t acc_offset = 0; int32_t num_elements_from_root = 0; }; Extractor extractors[kTaichiMaxNumIndices]; }; struct ElementCoords { int32_t at[kTaichiMaxNumIndices]; }; struct ListgenElement { ElementCoords coords; int32_t mem_offset = 0; struct BelongedNodeManager { int32_t id = -1; NodeManagerData::ElemIndex elem_idx; }; BelongedNodeManager belonged_nodemgr; inline bool in_root_buffer() const { return belonged_nodemgr.id < 0; } };
+
+struct Runtime {
+  SNodeMeta snode_metas[34];
+  SNodeExtractors snode_extractors[34];
+  ListManagerData snode_lists[34];
+  NodeManagerData snode_allocators[34];
+  NodeManagerData::ElemIndex ambient_indices[34];
+  uint32_t rand_seeds[65536];
+};
+
+[[maybe_unused]] PtrOffset mtl_memalloc_alloc(device MemoryAllocator *ma, int32_t size) { size = ((size + kAlignment - 1) / kAlignment) * kAlignment; return atomic_fetch_add_explicit(&ma->next, size, metal::memory_order_relaxed); } [[maybe_unused]] device char *mtl_memalloc_to_ptr(device MemoryAllocator *ma, PtrOffset offs) { return reinterpret_cast<device char *>(ma + 1) + offs; } struct ListManager { using ReservedElemPtrOffset = ListManagerData::ReservedElemPtrOffset; device ListManagerData *lm_data; device MemoryAllocator *mem_alloc; inline int num_active() { return atomic_load_explicit(&(lm_data->next), metal::memory_order_relaxed); } inline void resize(int sz) { atomic_store_explicit(&(lm_data->next), sz, metal::memory_order_relaxed); } inline void clear() { resize(0); } ReservedElemPtrOffset reserve_new_elem() { const int elem_idx = atomic_fetch_add_explicit( &lm_data->next, 1, metal::memory_order_relaxed); const int chunk_idx = get_chunk_index(elem_idx); const PtrOffset chunk_ptr_offs = ensure_chunk(chunk_idx); const auto offset = get_elem_ptr_offs_from_chunk(elem_idx, chunk_ptr_offs); return ReservedElemPtrOffset{offset}; } device char *append() { auto reserved = reserve_new_elem(); return get_ptr(reserved); } template <typename T> void append(thread const T &elem) { device char *ptr = append(); thread char *elem_ptr = (thread char *)(&elem); for (int i = 0; i < lm_data->element_stride; ++i) { *ptr = *elem_ptr; ++ptr; ++elem_ptr; } } device char *get_ptr(ReservedElemPtrOffset offs) { return mtl_memalloc_to_ptr(mem_alloc, offs.value()); } device char *get_ptr(int i) { const int chunk_idx = get_chunk_index(i); const PtrOffset chunk_ptr_offs = atomic_load_explicit( lm_data->chunks + chunk_idx, metal::memory_order_relaxed); return get_elem_from_chunk(i, chunk_ptr_offs); } template <typename T> T get(int i) { return *reinterpret_cast<device T *>(get_ptr(i)); } private: inline int get_chunk_index(int elem_idx) const { return elem_idx >> lm_data->log2_num_elems_per_chunk; } PtrOffset ensure_chunk(int chunk_idx) { PtrOffset offs = 0; const int chunk_bytes = (lm_data->element_stride << lm_data->log2_num_elems_per_chunk); while (true) { int stored = 0; const bool is_me = atomic_compare_exchange_weak_explicit( lm_data->chunks + chunk_idx, &stored, 1, metal::memory_order_relaxed, metal::memory_order_relaxed); if (is_me) { offs = mtl_memalloc_alloc(mem_alloc, chunk_bytes); atomic_store_explicit(lm_data->chunks + chunk_idx, offs, metal::memory_order_relaxed); break; } else if (stored > 1) { offs = stored; break; } } return offs; } PtrOffset get_elem_ptr_offs_from_chunk(int elem_idx, PtrOffset chunk_ptr_offs) { const uint32_t mask = ((1 << lm_data->log2_num_elems_per_chunk) - 1); return chunk_ptr_offs + ((elem_idx & mask) * lm_data->element_stride); } device char *get_elem_from_chunk(int elem_idx, PtrOffset chunk_ptr_offs) { const auto offs = get_elem_ptr_offs_from_chunk(elem_idx, chunk_ptr_offs); return mtl_memalloc_to_ptr(mem_alloc, offs); } }; struct NodeManager { using ElemIndex = NodeManagerData::ElemIndex; device NodeManagerData *nm_data; device MemoryAllocator *mem_alloc; ElemIndex allocate() { ListManager free_list; free_list.lm_data = &(nm_data->free_list); free_list.mem_alloc = mem_alloc; ListManager data_list; data_list.lm_data = &(nm_data->data_list); data_list.mem_alloc = mem_alloc; const int cur_used = atomic_fetch_add_explicit( &(nm_data->free_list_used), 1, metal::memory_order_relaxed); if (cur_used < free_list.num_active()) { return free_list.get<ElemIndex>(cur_used); } return data_list.reserve_new_elem(); } device byte *get(ElemIndex i) { ListManager data_list; data_list.lm_data = &(nm_data->data_list); data_list.mem_alloc = mem_alloc; return data_list.get_ptr(i); } void recycle(ElemIndex i) { ListManager recycled_list; recycled_list.lm_data = &(nm_data->recycled_list); recycled_list.mem_alloc = mem_alloc; recycled_list.append(i); } }; class SNodeRep_dense { public: void init(device byte * addr) { addr_ = addr; } inline device byte *addr() { return addr_; } inline bool is_active(int) { return true; } inline void activate(int) { } inline void deactivate(int) { } private: device byte *addr_ = nullptr; }; using SNodeRep_root = SNodeRep_dense; class SNodeRep_bitmasked { public: constant static constexpr int kBitsPerMask = (sizeof(uint32_t) * 8); void init(device byte * addr, int meta_offset) { addr_ = addr; meta_offset_ = meta_offset; } inline device byte *addr() { return addr_; } bool is_active(int i) { device auto *ptr = to_bitmask_ptr(i); uint32_t bits = atomic_load_explicit(ptr, metal::memory_order_relaxed); return ((bits >> (i % kBitsPerMask)) & 1); } void activate(int i) { device auto *ptr = to_bitmask_ptr(i); const uint32_t mask = (1 << (i % kBitsPerMask)); atomic_fetch_or_explicit(ptr, mask, metal::memory_order_relaxed); } void deactivate(int i) { device auto *ptr = to_bitmask_ptr(i); const uint32_t mask = ~(1 << (i % kBitsPerMask)); atomic_fetch_and_explicit(ptr, mask, metal::memory_order_relaxed); } private: inline device atomic_uint *to_bitmask_ptr(int i) { return reinterpret_cast<device atomic_uint *>(addr_ + meta_offset_) + (i / kBitsPerMask); } device byte *addr_ = nullptr; int32_t meta_offset_ = 0; }; class SNodeRep_dynamic { public: void init(device byte * addr, int meta_offset) { addr_ = addr; meta_offset_ = meta_offset; } inline device byte *addr() { return addr_; } bool is_active(int i) { const auto n = atomic_load_explicit(to_meta_ptr(), metal::memory_order_relaxed); return i < n; } void activate(int i) { device auto *ptr = to_meta_ptr(); atomic_fetch_max_explicit(ptr, (i + 1), metal::memory_order_relaxed); return; } void deactivate() { device auto *ptr = to_meta_ptr(); atomic_store_explicit(ptr, 0, metal::memory_order_relaxed); } int append(int32_t data) { device auto *ptr = to_meta_ptr(); int me = atomic_fetch_add_explicit(ptr, 1, metal::memory_order_relaxed); *(reinterpret_cast<device int32_t *>(addr_) + me) = data; return me; } int length() { return atomic_load_explicit(to_meta_ptr(), metal::memory_order_relaxed); } private: inline device atomic_int *to_meta_ptr() { return reinterpret_cast<device atomic_int *>(addr_ + meta_offset_); } device byte *addr_ = nullptr; int32_t meta_offset_ = 0; }; class SNodeRep_pointer { public: using ElemIndex = NodeManagerData::ElemIndex; void init(device byte * addr, NodeManager nm, ElemIndex ambient_idx) { addr_ = addr; nm_ = nm; ambient_idx_ = ambient_idx; } device byte *child_or_ambient_addr(int i) { auto nm_idx = to_nodemgr_idx(addr_, i); nm_idx = nm_idx.is_valid() ? nm_idx : ambient_idx_; return nm_.get(nm_idx); } inline bool is_active(int i) { return is_active(addr_, i); } void activate(int i) { device auto *nm_idx_ptr = to_nodemgr_idx_ptr(addr_, i); auto nm_idx_val = atomic_load_explicit(nm_idx_ptr, metal::memory_order_relaxed); while (!ElemIndex::is_valid(nm_idx_val)) { nm_idx_val = 0; const bool is_me = atomic_compare_exchange_weak_explicit( nm_idx_ptr, &nm_idx_val, 1, metal::memory_order_relaxed, metal::memory_order_relaxed); if (is_me) { nm_idx_val = nm_.allocate().value(); atomic_store_explicit(nm_idx_ptr, nm_idx_val, metal::memory_order_relaxed); break; } else if (ElemIndex::is_valid(nm_idx_val)) { break; } } } void deactivate(int i) { device auto *nm_idx_ptr = to_nodemgr_idx_ptr(addr_, i); const auto old_nm_idx_val = atomic_exchange_explicit( nm_idx_ptr, 0, metal::memory_order_relaxed); const auto old_nm_idx = ElemIndex(old_nm_idx_val); if (!old_nm_idx.is_valid()) { return; } nm_.recycle(old_nm_idx); } static inline device atomic_int *to_nodemgr_idx_ptr(device byte * addr, int ch_i) { return reinterpret_cast<device atomic_int *>(addr + ch_i * sizeof(ElemIndex)); } static inline ElemIndex to_nodemgr_idx(device byte * addr, int ch_i) { device auto *ptr = to_nodemgr_idx_ptr(addr, ch_i); const auto v = atomic_load_explicit(ptr, metal::memory_order_relaxed); return ElemIndex(v); } static bool is_active(device byte * addr, int ch_i) { return to_nodemgr_idx(addr, ch_i).is_valid(); } private: device byte *addr_; NodeManager nm_; ElemIndex ambient_idx_; }; [[maybe_unused]] int is_active(device byte *addr, SNodeMeta meta, int i) { if (meta.type == SNodeMeta::Root || meta.type == SNodeMeta::Dense) { return true; } else if (meta.type == SNodeMeta::Dynamic) { SNodeRep_dynamic rep; rep.init(addr, meta.num_slots * meta.element_stride); return rep.is_active(i); } else if (meta.type == SNodeMeta::Bitmasked) { SNodeRep_bitmasked rep; rep.init(addr, meta.num_slots * meta.element_stride); return rep.is_active(i); } else if (meta.type == SNodeMeta::Pointer) { return SNodeRep_pointer::is_active(addr, i); } return false; } [[maybe_unused]] void refine_coordinates( thread const ElementCoords &parent, device const SNodeExtractors &child_extrators, int l, thread ElementCoords *child) { for (int i = 0; i < kTaichiMaxNumIndices; ++i) { device const auto &ex = child_extrators.extractors[i]; const int mask = ((1 << ex.num_bits) - 1); const int addition = ((l >> ex.acc_offset) & mask); child->at[i] = ((parent.at[i] << ex.num_bits) | addition); } } [[maybe_unused]] device byte *mtl_lgen_snode_addr( thread const ListgenElement &lgen, device byte *root_addr, device Runtime *rtm, device MemoryAllocator *mem_alloc) { if (lgen.in_root_buffer()) { return root_addr + lgen.mem_offset; } NodeManager nm; nm.nm_data = (rtm->snode_allocators + lgen.belonged_nodemgr.id); nm.mem_alloc = mem_alloc; device byte *addr = nm.get(lgen.belonged_nodemgr.elem_idx); return addr + lgen.mem_offset; } [[maybe_unused]] void run_gc_compact_free_list( device NodeManagerData *nm_data, device MemoryAllocator *mem_alloc, const int tid, const int grid_size) { NodeManager nm; nm.nm_data = nm_data; nm.mem_alloc = mem_alloc; ListManager free_list; free_list.lm_data = &(nm.nm_data->free_list); free_list.mem_alloc = nm.mem_alloc; const int free_size = free_list.num_active(); const int free_used = atomic_load_explicit(&(nm.nm_data->free_list_used), metal::memory_order_relaxed); int num_to_copy = 0; if (free_used * 2 > free_size) { num_to_copy = free_size - free_used; } else { num_to_copy = free_used; } const int offs = free_size - num_to_copy; using ElemIndex = NodeManager::ElemIndex; for (int ii = tid; ii < num_to_copy; ii += grid_size) { device auto *dest = reinterpret_cast<device ElemIndex *>(free_list.get_ptr(ii)); *dest = free_list.get<ElemIndex>(ii + offs); } } [[maybe_unused]] void run_gc_reset_free_list( device NodeManagerData *nm_data, device MemoryAllocator *mem_alloc) { NodeManager nm; nm.nm_data = nm_data; nm.mem_alloc = mem_alloc; ListManager free_list; free_list.lm_data = &(nm.nm_data->free_list); free_list.mem_alloc = nm.mem_alloc; const int free_size = free_list.num_active(); const int free_used = atomic_exchange_explicit( &(nm.nm_data->free_list_used), 0, metal::memory_order_relaxed); int free_remaining = free_size - free_used; free_remaining = free_remaining > 0 ? free_remaining : 0; free_list.resize(free_remaining); nm.nm_data->recycled_list_size_backup = atomic_exchange_explicit( &(nm.nm_data->recycled_list.next), 0, metal::memory_order_relaxed); } struct GCMoveRecycledToFreeThreadParams { int thread_position_in_threadgroup; int threadgroup_position_in_grid; int threadgroups_per_grid; int threads_per_threadgroup; }; [[maybe_unused]] void run_gc_move_recycled_to_free( device NodeManagerData *nm_data, device MemoryAllocator *mem_alloc, thread const GCMoveRecycledToFreeThreadParams &thparams) { NodeManager nm; nm.nm_data = nm_data; nm.mem_alloc = mem_alloc; ListManager free_list; free_list.lm_data = &(nm.nm_data->free_list); free_list.mem_alloc = nm.mem_alloc; ListManager recycled_list; recycled_list.lm_data = &(nm.nm_data->recycled_list); recycled_list.mem_alloc = nm.mem_alloc; ListManager data_list; data_list.lm_data = &(nm.nm_data->data_list); data_list.mem_alloc = nm.mem_alloc; const int kInt32Stride = sizeof(int32_t); const int recycled_size = nm.nm_data->recycled_list_size_backup; using ElemIndex = NodeManager::ElemIndex; for (int ii = thparams.threadgroup_position_in_grid; ii < recycled_size; ii += thparams.threadgroups_per_grid) { const auto elem_idx = recycled_list.get<ElemIndex>(ii); device char *ptr = nm.get(elem_idx); device const char *ptr_end = ptr + data_list.lm_data->element_stride; const int ptr_mod = ((int64_t)(ptr) % kInt32Stride); if (ptr_mod) { device char *new_ptr = ptr + kInt32Stride - ptr_mod; if (thparams.thread_position_in_threadgroup == 0) { for (device char *p = ptr; p < new_ptr; ++p) { *p = 0; } } ptr = new_ptr; } ptr += (thparams.thread_position_in_threadgroup * kInt32Stride); while ((ptr + kInt32Stride) <= ptr_end) { *reinterpret_cast<device int32_t *>(ptr) = 0; ptr += (kInt32Stride * thparams.threads_per_threadgroup); } while (ptr < ptr_end) { *ptr = 0; ++ptr; } if (thparams.thread_position_in_threadgroup == 0) { free_list.append(elem_idx); } } }
+
+struct SNodeBitPointer { device uint32_t *base; uint32_t offset; SNodeBitPointer(device byte * b, uint32_t o) : base((device uint32_t *)b), offset(o) { } }; template <typename C> C mtl_float_to_custom_int(float f) { const int32_t delta_bits = (union_cast<int32_t>(f) & 0x80000000) | union_cast<int32_t>(0.5f); const float delta = union_cast<float>(delta_bits); return static_cast<C>(f + delta); } void mtl_set_partial_bits(SNodeBitPointer bp, uint32_t value, uint32_t bits) { using P = uint32_t; constexpr int N = sizeof(P) * 8; const uint32_t mask = ((~(uint32_t)0U) << (N - bits)) >> (N - bp.offset - bits); device auto *atm_ptr = reinterpret_cast<device atomic_uint *>(bp.base); bool ok = false; while (!ok) { P old_val = *(bp.base); P new_val = (old_val & (~mask)) | (value << bp.offset); ok = atomic_compare_exchange_weak_explicit(atm_ptr, &old_val, new_val, metal::memory_order_relaxed, metal::memory_order_relaxed); } } void mtl_set_full_bits(SNodeBitPointer bp, uint32_t value) { device auto *atm_ptr = reinterpret_cast<device atomic_uint *>(bp.base); atomic_store_explicit(atm_ptr, value, metal::memory_order_relaxed); } uint32_t mtl_atomic_add_partial_bits(SNodeBitPointer bp, uint32_t value, uint32_t bits) { using P = uint32_t; constexpr int N = sizeof(P) * 8; const uint32_t mask = ((~(uint32_t)0U) << (N - bits)) >> (N - bp.offset - bits); device auto *atm_ptr = reinterpret_cast<device atomic_uint *>(bp.base); P old_val = 0; bool ok = false; while (!ok) { old_val = *(bp.base); P new_val = old_val + (value << bp.offset); new_val = (old_val & (~mask)) | (new_val & mask); ok = atomic_compare_exchange_weak_explicit(atm_ptr, &old_val, new_val, metal::memory_order_relaxed, metal::memory_order_relaxed); } return old_val; } uint32_t mtl_atomic_add_full_bits(SNodeBitPointer bp, uint32_t value) { device auto *atm_ptr = reinterpret_cast<device atomic_uint *>(bp.base); return atomic_fetch_add_explicit(atm_ptr, value, metal::memory_order_relaxed); } namespace detail { template <bool Signed> struct SHRSelector { using type = int32_t; }; template <> struct SHRSelector<false> { using type = uint32_t; }; } template <typename C> C mtl_get_partial_bits(SNodeBitPointer bp, uint32_t bits) { using P = uint32_t; constexpr int N = sizeof(P) * 8; const P phy_val = *(bp.base); using CSel = typename detail::SHRSelector<is_signed<C>::value>::type; const auto step1 = static_cast<CSel>(phy_val << (N - (bp.offset + bits))); return static_cast<C>(step1 >> (N - bits)); } template <typename C> C mtl_get_full_bits(SNodeBitPointer bp) { return static_cast<C>(*(bp.base)); }
+
+
+
+
+struct S43 {
+  // place
+  constant static constexpr int stride = sizeof(int32_t);
+
+  S43(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device int32_t*)v) {}
+
+  device int32_t *val;
+};
+
+
+struct S42 {
+  // place
+  constant static constexpr int stride = sizeof(int32_t);
+
+  S42(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device int32_t*)v) {}
+
+  device int32_t *val;
+};
+
+
+struct S41 {
+  // place
+  constant static constexpr int stride = sizeof(int32_t);
+
+  S41(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device int32_t*)v) {}
+
+  device int32_t *val;
+};
+
+
+struct S40 {
+  // place
+  constant static constexpr int stride = sizeof(int32_t);
+
+  S40(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device int32_t*)v) {}
+
+  device int32_t *val;
+};
+
+
+struct S39 {
+  // place
+  constant static constexpr int stride = sizeof(float);
+
+  S39(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device float*)v) {}
+
+  device float *val;
+};
+
+
+struct S38 {
+  // place
+  constant static constexpr int stride = sizeof(float);
+
+  S38(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device float*)v) {}
+
+  device float *val;
+};
+
+
+struct S37 {
+  // place
+  constant static constexpr int stride = sizeof(float);
+
+  S37(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device float*)v) {}
+
+  device float *val;
+};
+
+
+struct S36 {
+  // place
+  constant static constexpr int stride = sizeof(float);
+
+  S36(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device float*)v) {}
+
+  device float *val;
+};
+
+
+struct S35 {
+  // place
+  constant static constexpr int stride = sizeof(float);
+
+  S35(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device float*)v) {}
+
+  device float *val;
+};
+
+
+struct S34 {
+  // place
+  constant static constexpr int stride = sizeof(float);
+
+  S34(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device float*)v) {}
+
+  device float *val;
+};
+
+class S33_ch {
+ public:
+  S33_ch(device byte *a) : addr_(a) {}
+  S34 get0(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0), rtm, ma};
+  }
+
+  S35 get1(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S34::stride), rtm, ma};
+  }
+
+  S36 get2(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S34::stride + S35::stride), rtm, ma};
+  }
+
+  S37 get3(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S34::stride + S35::stride + S36::stride), rtm, ma};
+  }
+
+  S38 get4(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S34::stride + S35::stride + S36::stride + S37::stride), rtm, ma};
+  }
+
+  S39 get5(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S34::stride + S35::stride + S36::stride + S37::stride + S38::stride), rtm, ma};
+  }
+
+  S40 get6(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S34::stride + S35::stride + S36::stride + S37::stride + S38::stride + S39::stride), rtm, ma};
+  }
+
+  S41 get7(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S34::stride + S35::stride + S36::stride + S37::stride + S38::stride + S39::stride + S40::stride), rtm, ma};
+  }
+
+  S42 get8(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S34::stride + S35::stride + S36::stride + S37::stride + S38::stride + S39::stride + S40::stride + S41::stride), rtm, ma};
+  }
+
+  S43 get9(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S34::stride + S35::stride + S36::stride + S37::stride + S38::stride + S39::stride + S40::stride + S41::stride + S42::stride), rtm, ma};
+  }
+
+  device byte *addr() { return addr_; }
+
+  constant static constexpr int stride = 0 + S34::stride + S35::stride + S36::stride + S37::stride + S38::stride + S39::stride + S40::stride + S41::stride + S42::stride + S43::stride;
+ private:
+  device byte *addr_;
+};
+
+struct S33 {
+  // dense
+  constant static constexpr int n = 1;
+  constant static constexpr int elem_stride = S33_ch::stride;
+  constant static constexpr int stride = elem_stride * n;
+
+  S33(device byte *addr, device Runtime *rtm, device MemoryAllocator *ma) {
+    rep_.init(addr);
+  }
+
+  S33_ch children(int i) {
+    return {rep_.addr() + (i * elem_stride)};
+  }
+
+  inline bool is_active(int i) {
+    return rep_.is_active(i);
+  }
+
+  inline void activate(int i) {
+    rep_.activate(i);
+  }
+
+  inline void deactivate(int i) {
+    rep_.deactivate(i);
+  }
+
+ private:
+  SNodeRep_dense rep_;
+};
+
+class S32_ch {
+ public:
+  S32_ch(device byte *a) : addr_(a) {}
+  S33 get0(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0), rtm, ma};
+  }
+
+  device byte *addr() { return addr_; }
+
+  constant static constexpr int stride = 0 + S33::stride;
+ private:
+  device byte *addr_;
+};
+
+struct S32 {
+  // root
+  constant static constexpr int n = 1;
+  constant static constexpr int elem_stride = S32_ch::stride;
+  constant static constexpr int stride = elem_stride * n;
+
+  S32(device byte *addr) {
+    rep_.init(addr);
+  }
+
+  S32_ch children(int i) {
+    return {rep_.addr() + (i * elem_stride)};
+  }
+
+  inline bool is_active(int i) {
+    return rep_.is_active(i);
+  }
+
+  inline void activate(int i) {
+    rep_.activate(i);
+  }
+
+  inline void deactivate(int i) {
+    rep_.deactivate(i);
+  }
+
+ private:
+  SNodeRep_root rep_;
+};
+
+
+
+using AdStackPtr = thread byte *; inline thread uint32_t * mtl_ad_stack_n(AdStackPtr stack) { return reinterpret_cast<thread uint32_t *>(stack); } inline AdStackPtr mtl_ad_stack_data(AdStackPtr stack) { return stack + sizeof(uint32_t); } inline void mtl_ad_stack_init(AdStackPtr stack) { *mtl_ad_stack_n(stack) = 0; } inline AdStackPtr mtl_ad_stack_top_primal(AdStackPtr stack, int element_size) { const auto n = *mtl_ad_stack_n(stack); return mtl_ad_stack_data(stack) + (n - 1) * 2 * element_size; } inline AdStackPtr mtl_ad_stack_top_adjoint(AdStackPtr stack, int element_size) { return mtl_ad_stack_top_primal(stack, element_size) + element_size; } inline void mtl_ad_stack_pop(AdStackPtr stack) { thread auto &n = *mtl_ad_stack_n(stack); --n; } void mtl_ad_stack_push(AdStackPtr stack, int element_size) { thread auto &n = *mtl_ad_stack_n(stack); ++n; AdStackPtr data = mtl_ad_stack_top_primal(stack, element_size); for (int i = 0; i < element_size * 2; ++i) { data[i] = 0; } }
+
+constant constexpr int kMetalNumBitsPerPrintMsgType = 4; constant constexpr int kMetalNumPrintMsgTypePerI32 = sizeof(int32_t) * 8 / kMetalNumBitsPerPrintMsgType; constant constexpr int kMetalPrintMsgTypeWidthMask = ((1 << kMetalNumBitsPerPrintMsgType) - 1); [[maybe_unused]] constexpr inline int mtl_compute_num_print_msg_typemasks( int num_entries) { return (num_entries + kMetalNumPrintMsgTypePerI32 - 1) / kMetalNumPrintMsgTypePerI32; } [[maybe_unused]] constexpr inline int mtl_compute_print_msg_bytes( int num_entries) { const int sz = sizeof(int32_t) * (1 + mtl_compute_num_print_msg_typemasks(num_entries) + num_entries); return sz; } class PrintMsg { public: enum Type { I32 = 1, U32 = 2, F32 = 3, Str = 4 }; PrintMsg(device int32_t *buf, int num_entries) : mask_buf_(buf), data_buf_(buf + mtl_compute_num_print_msg_typemasks(num_entries)) { } void pm_set_i32(int i, int x) { set_entry(i, x, Type::I32); } void pm_set_u32(int i, uint x) { const int32_t ix = static_cast<int32_t>(x); set_entry(i, ix, Type::U32); } void pm_set_f32(int i, float x) { const int32_t ix = *reinterpret_cast<thread int32_t *>(&x); set_entry(i, ix, Type::F32); } void pm_set_str(int i, int str_id) { set_entry(i, str_id, Type::Str); } Type pm_get_type(int i) { const int mask_i = i / kMetalNumPrintMsgTypePerI32; const int i_in_mask = i % kMetalNumPrintMsgTypePerI32; int mask = mask_buf_[mask_i]; mask >>= typemask_shift(i_in_mask); mask &= kMetalPrintMsgTypeWidthMask; return (Type)mask; } int32_t pm_get_data(int i) { return data_buf_[i]; } private: void set_entry(int i, int32_t x, Type ty) { const int mask_i = i / kMetalNumPrintMsgTypePerI32; const int i_in_mask = i % kMetalNumPrintMsgTypePerI32; int mask = ((int)ty & kMetalPrintMsgTypeWidthMask); mask <<= typemask_shift(i_in_mask); mask_buf_[mask_i] |= mask; data_buf_[i] = x; } inline static int typemask_shift(int i_in_mask) { return (kMetalNumPrintMsgTypePerI32 - 1 - i_in_mask) * kMetalNumBitsPerPrintMsgType; } device int32_t *mask_buf_; device int32_t *data_buf_; }; struct AssertRecorderData { atomic_int flag; int32_t num_args; }; class AssertRecorder { public: explicit AssertRecorder(device byte * addr) : ac_(reinterpret_cast<device AssertRecorderData *>(addr)) { } bool mark_first_failure() { return atomic_exchange_explicit(&(ac_->flag), 1, metal::memory_order_relaxed) == 0; } void set_num_args(int n) { ac_->num_args = n; } device int32_t *msg_buf_addr() { return reinterpret_cast<device int32_t *>(ac_ + 1); } private: device AssertRecorderData *ac_; }; constant constexpr int kMetalMaxNumAssertArgs = 64; constant constexpr int kMetalAssertBufferSize = sizeof(AssertRecorderData) + mtl_compute_print_msg_bytes(kMetalMaxNumAssertArgs); struct PrintMsgAllocator { atomic_int next; }; constant constexpr int kMetalPrintAssertBufferSize = 2 * 1024 * 1024; constant constexpr int kMetalPrintMsgsMaxQueueSize = kMetalPrintAssertBufferSize - sizeof(PrintMsgAllocator) - kMetalAssertBufferSize; [[maybe_unused]] device int32_t * mtl_print_alloc_buf(device PrintMsgAllocator *pa, int num_entries) { const int sz = mtl_compute_print_msg_bytes(num_entries); const int cur = atomic_fetch_add_explicit(&(pa->next), sz, metal::memory_order_relaxed); if (cur + sz >= kMetalPrintMsgsMaxQueueSize) { return (device int32_t *)0; } device byte *data_begin = reinterpret_cast<device byte *>(pa + 1); device int32_t *ptr = reinterpret_cast<device int32_t *>(data_begin + cur); *ptr = num_entries; return (ptr + 1); }
+
+void mtl_k0041_render_pass_c4_0_0_func(
+    device byte* root_addr,
+    device byte* global_tmps_addr,
+    device byte* runtime_addr,
+    device byte* print_assert_addr,
+    const int linear_loop_idx_) {
+  device auto *runtime_ = reinterpret_cast<device Runtime *>(runtime_addr);
+  device auto *mem_alloc_ = reinterpret_cast<device MemoryAllocator *>(runtime_ + 1);
+  device RandState* rand_state_ = reinterpret_cast<device RandState*>(runtime_->rand_seeds + (linear_loop_idx_ % 65536));
+  AssertRecorder assert_rec_(print_assert_addr);
+  device auto* print_alloc_ = reinterpret_cast<device PrintMsgAllocator*>(print_assert_addr + 300);
+  constexpr int32_t tmp7680 = 255;
+  constexpr int32_t tmp7676 = 511;
+  constexpr int32_t tmp7632 = 127;
+  constexpr float tmp96 = -0.0005248151;
+  constexpr float tmp94 = 3.8894572;
+  constexpr float tmp92 = -0.015310406;
+  constexpr float tmp89 = -3.226284;
+  constexpr float tmp87 = 0.0155695155;
+  constexpr float tmp82 = -0.002274199;
+  constexpr float tmp80 = 2.9136016;
+  constexpr float tmp78 = 0.0035331706;
+  constexpr float tmp76 = 3.0;
+  constexpr float tmp74 = 2.0;
+  constexpr float tmp72 = 13.0;
+  constexpr float tmp68 = -0.0016667696;
+  constexpr float tmp66 = -0.048719563;
+  constexpr float tmp64 = 0.0494475;
+  constexpr float tmp61 = -0.0072226683;
+  constexpr float tmp59 = 0.0112429755;
+  constexpr int32_t tmp31 = 50;
+  constexpr float tmp30 = 100000000.0;
+  constexpr int32_t tmp29 = -1;
+  constexpr float tmp28 = 0.0001;
+  constexpr float tmp27 = 6.2831855;
+  constexpr int32_t tmp26 = 1;
+  constexpr float tmp25 = 0.0;
+  constexpr float tmp24 = 0.5;
+  constexpr float tmp23 = 1.0;
+  constexpr float tmp22 = 0.25;
+  constexpr float tmp21 = 0.35;
+  constexpr int32_t tmp20 = 0;
+  const int tmp3 = linear_loop_idx_;
+  constexpr int32_t tmp7494 = 8;
+  const int32_t tmp7495 = (tmp3 >> tmp7494);
+  const int32_t tmp7497 = (tmp7495 & tmp7676);
+  const int32_t tmp7501 = (tmp3 & tmp7680);
+  constexpr int32_t tmp13 = 400;
+  const int32_t tmp14 = -(tmp7497 < tmp13);
+  constexpr int32_t tmp16 = 225;
+  const int32_t tmp17 = -(tmp7501 < tmp16);
+  const int32_t tmp18 = (tmp14 & tmp17);
+  if (tmp18) {
+    const auto tmp32 = metal_rand_f32(rand_state_);
+    const auto tmp33 = metal_rand_f32(rand_state_);
+    const float tmp34 = static_cast<float>(tmp7497);
+    const float tmp35 = (tmp34 + tmp32);
+    const float tmp36 = static_cast<float>(tmp7501);
+    const float tmp37 = (tmp36 + tmp33);
+    float tmp38(0);
+    float tmp39(0);
+    while (true) {
+      const auto tmp41 = metal_rand_f32(rand_state_);
+      const auto tmp42 = metal_rand_f32(rand_state_);
+      const float tmp43 = (tmp41 + tmp41);
+      const float tmp44 = (tmp43 - tmp23);
+      const float tmp45 = (tmp42 + tmp42);
+      const float tmp46 = (tmp45 - tmp23);
+      tmp38 = tmp44;
+      tmp39 = tmp46;
+      const float tmp49 = (tmp44 * tmp44);
+      const float tmp50 = (tmp46 * tmp46);
+      const float tmp51 = (tmp49 + tmp50);
+      const float tmp52 = sqrt(tmp51);
+      const int32_t tmp53 = -(tmp52 < tmp23);
+      const int32_t tmp54 = (tmp53 & tmp26);
+      if (tmp54) {
+        if (!tmp20) break;
+      } else {
+      }
+    }
+    const float tmp57(tmp38);
+    const float tmp58(tmp39);
+    const float tmp60 = (tmp57 * tmp59);
+    const float tmp62 = (tmp58 * tmp61);
+    const float tmp63 = (tmp60 + tmp62);
+    const float tmp65 = (tmp58 * tmp64);
+    const float tmp67 = (tmp57 * tmp66);
+    const float tmp69 = (tmp58 * tmp68);
+    const float tmp70 = (tmp67 + tmp69);
+    const auto tmp71 = metal_rand_f32(rand_state_);
+    const float tmp73 = (tmp63 + tmp72);
+    const float tmp75 = (tmp65 + tmp74);
+    const float tmp77 = (tmp70 + tmp76);
+    const float tmp79 = (tmp35 * tmp78);
+    const float tmp81 = (tmp79 + tmp80);
+    const float tmp83 = (tmp37 * tmp82);
+    const float tmp84 = (tmp81 + tmp83);
+    const float tmp85 = (tmp84 - tmp72);
+    const float tmp86 = (tmp85 - tmp63);
+    const float tmp88 = (tmp37 * tmp87);
+    const float tmp90 = (tmp88 + tmp89);
+    const float tmp91 = (tmp90 - tmp65);
+    const float tmp93 = (tmp35 * tmp92);
+    const float tmp95 = (tmp93 + tmp94);
+    const float tmp97 = (tmp37 * tmp96);
+    const float tmp98 = (tmp95 + tmp97);
+    const float tmp99 = (tmp98 - tmp76);
+    const float tmp100 = (tmp99 - tmp70);
+    float tmp101(0);
+    tmp101 = tmp73;
+    float tmp103(0);
+    tmp103 = tmp75;
+    float tmp105(0);
+    tmp105 = tmp77;
+    float tmp107(0);
+    tmp107 = tmp86;
+    float tmp109(0);
+    tmp109 = tmp91;
+    float tmp111(0);
+    tmp111 = tmp100;
+    float tmp113(0);
+    tmp113 = tmp71;
+    float tmp115(0);
+    tmp115 = tmp23;
+    float tmp117(0);
+    tmp117 = tmp23;
+    float tmp119(0);
+    tmp119 = tmp23;
+    int32_t tmp121(0);
+    tmp121 = tmp26;
+    while (true) {
+      const int32_t tmp124(tmp121);
+      const int32_t tmp125 = -(tmp124 < tmp31);
+      const int32_t tmp126 = (tmp125 & tmp26);
+      if (tmp126) {
+      } else {
+        if (!tmp20) break;
+      }
+      const float tmp129(tmp101);
+      const float tmp130(tmp103);
+      const float tmp131(tmp105);
+      const float tmp132(tmp107);
+      const float tmp133(tmp109);
+      const float tmp134(tmp111);
+      const float tmp135(tmp113);
+      int32_t tmp136(0);
+      float tmp137(0);
+      tmp137 = tmp30;
+      float tmp139(0);
+      float tmp140(0);
+      float tmp141(0);
+      float tmp142(0);
+      float tmp143(0);
+      float tmp144(0);
+      int32_t tmp145(0);
+      tmp145 = tmp26;
+      float tmp147(0);
+      float tmp148(0);
+      float tmp149(0);
+      float tmp150(0);
+      float tmp151(0);
+      int32_t tmp152(0);
+      const int32_t tmp153 = -(tmp132 == tmp25);
+      const int32_t tmp154 = -(tmp133 == tmp25);
+      const int32_t tmp155 = -(tmp134 == tmp25);
+      const int32_t tmp156 = (tmp153 & tmp26);
+      const int32_t tmp157 = (tmp154 & tmp26);
+      const int32_t tmp158 = (tmp155 & tmp26);
+      while (true) {
+        S32 tmp7093(root_addr);
+        S32_ch tmp7095 = tmp7093.children(tmp20);
+        S33 tmp7096 = tmp7095.get0(runtime_, mem_alloc_);
+        S33_ch tmp7099 = tmp7096.children(tmp20);
+        device float* tmp7100 = tmp7099.get0(runtime_, mem_alloc_).val;
+        const auto tmp161 = *tmp7100;
+        device float* tmp7110 = tmp7099.get1(runtime_, mem_alloc_).val;
+        const auto tmp163 = *tmp7110;
+        device float* tmp7120 = tmp7099.get2(runtime_, mem_alloc_).val;
+        const auto tmp165 = *tmp7120;
+        device float* tmp7130 = tmp7099.get3(runtime_, mem_alloc_).val;
+        const auto tmp167 = *tmp7130;
+        device float* tmp7140 = tmp7099.get4(runtime_, mem_alloc_).val;
+        const auto tmp169 = *tmp7140;
+        device float* tmp7150 = tmp7099.get5(runtime_, mem_alloc_).val;
+        const auto tmp171 = *tmp7150;
+        device int32_t* tmp7160 = tmp7099.get6(runtime_, mem_alloc_).val;
+        const auto tmp173 = *tmp7160;
+        device int32_t* tmp7170 = tmp7099.get7(runtime_, mem_alloc_).val;
+        const auto tmp175 = *tmp7170;
+        float tmp176(0);
+        tmp176 = tmp28;
+        float tmp178(0);
+        const float tmp179(tmp137);
+        tmp178 = tmp179;
+        int32_t tmp181(0);
+        tmp181 = tmp26;
+        if (tmp156) {
+          const int32_t tmp184 = -(tmp129 < tmp161);
+          const int32_t tmp185 = (tmp184 & tmp26);
+          const int32_t tmp186 = -(tmp129 > tmp167);
+          const int32_t tmp187 = (tmp186 & tmp26);
+          const int32_t tmp188 = (tmp185 | tmp187);
+          if (tmp188) {
+            tmp181 = tmp20;
+          } else {
+          }
+        } else {
+          const float tmp191 = (tmp161 - tmp129);
+          const float tmp192 = (tmp191 / tmp132);
+          const float tmp193 = (tmp167 - tmp129);
+          const float tmp194 = (tmp193 / tmp132);
+          const float tmp195 =  max(tmp192, tmp194);
+          const float tmp196 =  min(tmp192, tmp194);
+          const float tmp197 =  min(tmp195, tmp179);
+          tmp178 = tmp197;
+          const float tmp199 =  max(tmp196, tmp28);
+          tmp176 = tmp199;
+        }
+        if (tmp157) {
+          const int32_t tmp202 = -(tmp130 < tmp163);
+          const int32_t tmp203 = (tmp202 & tmp26);
+          const int32_t tmp204 = -(tmp130 > tmp169);
+          const int32_t tmp205 = (tmp204 & tmp26);
+          const int32_t tmp206 = (tmp203 | tmp205);
+          if (tmp206) {
+            tmp181 = tmp20;
+          } else {
+          }
+        } else {
+          const float tmp209 = (tmp163 - tmp130);
+          const float tmp210 = (tmp209 / tmp133);
+          const float tmp211 = (tmp169 - tmp130);
+          const float tmp212 = (tmp211 / tmp133);
+          const float tmp213 =  max(tmp210, tmp212);
+          const float tmp214 =  min(tmp210, tmp212);
+          const float tmp215(tmp178);
+          const float tmp216 =  min(tmp213, tmp215);
+          tmp178 = tmp216;
+          const float tmp218(tmp176);
+          const float tmp219 =  max(tmp214, tmp218);
+          tmp176 = tmp219;
+        }
+        if (tmp158) {
+          const int32_t tmp222 = -(tmp131 < tmp165);
+          const int32_t tmp223 = (tmp222 & tmp26);
+          const int32_t tmp224 = -(tmp131 > tmp171);
+          const int32_t tmp225 = (tmp224 & tmp26);
+          const int32_t tmp226 = (tmp223 | tmp225);
+          if (tmp226) {
+            tmp181 = tmp20;
+          } else {
+          }
+        } else {
+          const float tmp229 = (tmp165 - tmp131);
+          const float tmp230 = (tmp229 / tmp134);
+          const float tmp231 = (tmp171 - tmp131);
+          const float tmp232 = (tmp231 / tmp134);
+          const float tmp233 =  max(tmp230, tmp232);
+          const float tmp234 =  min(tmp230, tmp232);
+          const float tmp235(tmp178);
+          const float tmp236 =  min(tmp233, tmp235);
+          tmp178 = tmp236;
+          const float tmp238(tmp176);
+          const float tmp239 =  max(tmp234, tmp238);
+          tmp176 = tmp239;
+        }
+        const float tmp241(tmp176);
+        const float tmp242(tmp178);
+        const int32_t tmp243 = -(tmp241 > tmp242);
+        const int32_t tmp244 = (tmp243 & tmp26);
+        if (tmp244) {
+          tmp181 = tmp20;
+        } else {
+        }
+        const int32_t tmp247(tmp181);
+        const int32_t tmp248 = -(tmp247 == tmp20);
+        const int32_t tmp249 = (tmp248 & tmp26);
+        if (tmp249) {
+          continue;
+        } else {
+        }
+        const int32_t tmp252 = -(tmp175 != tmp29);
+        const int32_t tmp253 = (tmp252 & tmp26);
+        if (tmp253) {
+          const float tmp255(tmp137);
+          int32_t tmp256(0);
+          float tmp257(0);
+          float tmp258(0);
+          float tmp259(0);
+          float tmp260(0);
+          float tmp261(0);
+          float tmp262(0);
+          float tmp263(0);
+          int32_t tmp264(0);
+          float tmp265(0);
+          float tmp266(0);
+          float tmp267(0);
+          float tmp268(0);
+          float tmp269(0);
+          int32_t tmp270(0);
+          const int32_t tmp271 = -(tmp173 == tmp26);
+          const int32_t tmp272 = (tmp271 & tmp26);
+          S32 tmp7173(root_addr);
+          S0_ch tmp7175 = tmp7173.children(tmp20);
+          if (tmp272) {
+            S16 tmp7176 = tmp7175.get2(runtime_, mem_alloc_);
+            const int32_t tmp7537 = (tmp175 & tmp7676);
+            S16_ch tmp7179 = tmp7176.children(tmp7537);
+            device float* tmp7180 = tmp7179.get0(runtime_, mem_alloc_).val;
+            const auto tmp275 = *tmp7180;
+            device float* tmp7190 = tmp7179.get1(runtime_, mem_alloc_).val;
+            const auto tmp277 = *tmp7190;
+            device float* tmp7200 = tmp7179.get2(runtime_, mem_alloc_).val;
+            const auto tmp279 = *tmp7200;
+            device float* tmp7210 = tmp7179.get3(runtime_, mem_alloc_).val;
+            const auto tmp281 = *tmp7210;
+            device float* tmp7220 = tmp7179.get4(runtime_, mem_alloc_).val;
+            const auto tmp283 = *tmp7220;
+            device float* tmp7230 = tmp7179.get5(runtime_, mem_alloc_).val;
+            const auto tmp285 = *tmp7230;
+            device float* tmp7240 = tmp7179.get6(runtime_, mem_alloc_).val;
+            const auto tmp287 = *tmp7240;
+            device float* tmp7250 = tmp7179.get13(runtime_, mem_alloc_).val;
+            const auto tmp295 = *tmp7250;
+            device float* tmp7260 = tmp7179.get14(runtime_, mem_alloc_).val;
+            const auto tmp297 = *tmp7260;
+            int32_t tmp298(0);
+            float tmp299(0);
+            float tmp300(0);
+            float tmp301(0);
+            float tmp302(0);
+            float tmp303(0);
+            float tmp304(0);
+            float tmp305(0);
+            int32_t tmp306(0);
+            tmp306 = tmp26;
+            const float tmp308 = (tmp135 - tmp295);
+            const float tmp309 = (tmp297 - tmp295);
+            const float tmp310 = (tmp308 / tmp309);
+            const float tmp311 = (tmp281 - tmp275);
+            const float tmp312 = (tmp310 * tmp311);
+            const float tmp313 = (tmp275 + tmp312);
+            const float tmp314 = (tmp283 - tmp277);
+            const float tmp315 = (tmp310 * tmp314);
+            const float tmp316 = (tmp277 + tmp315);
+            const float tmp317 = (tmp285 - tmp279);
+            const float tmp318 = (tmp310 * tmp317);
+            const float tmp319 = (tmp279 + tmp318);
+            const float tmp320 = (tmp129 - tmp313);
+            const float tmp321 = (tmp130 - tmp316);
+            const float tmp322 = (tmp131 - tmp319);
+            const float tmp323 = (tmp132 * tmp132);
+            const float tmp324 = (tmp133 * tmp133);
+            const float tmp325 = (tmp323 + tmp324);
+            const float tmp326 = (tmp134 * tmp134);
+            const float tmp327 = (tmp325 + tmp326);
+            const float tmp328 = (tmp320 * tmp132);
+            const float tmp329 = (tmp321 * tmp133);
+            const float tmp330 = (tmp328 + tmp329);
+            const float tmp331 = (tmp322 * tmp134);
+            const float tmp332 = (tmp330 + tmp331);
+            const float tmp333 = (tmp320 * tmp320);
+            const float tmp334 = (tmp321 * tmp321);
+            const float tmp335 = (tmp333 + tmp334);
+            const float tmp336 = (tmp322 * tmp322);
+            const float tmp337 = (tmp335 + tmp336);
+            const float tmp338 = (tmp287 * tmp287);
+            const float tmp339 = (tmp337 - tmp338);
+            const float tmp340 = (tmp332 * tmp332);
+            const float tmp341 = (tmp327 * tmp339);
+            const float tmp342 = (tmp340 - tmp341);
+            const int32_t tmp343 = -(tmp342 >= tmp25);
+            const int32_t tmp344 = (tmp343 & tmp26);
+            if (tmp344) {
+              const float tmp346 = sqrt(tmp342);
+              float tmp347(0);
+              const float tmp348 = -(tmp332);
+              const float tmp349 = (tmp348 - tmp346);
+              const float tmp350 = (tmp349 / tmp327);
+              tmp347 = tmp350;
+              const int32_t tmp352 = -(tmp350 >= tmp28);
+              const int32_t tmp353 = (tmp352 & tmp26);
+              const int32_t tmp354 = -(tmp350 < tmp255);
+              const int32_t tmp355 = (tmp354 & tmp26);
+              const int32_t tmp356 = (tmp353 & tmp355);
+              tmp298 = tmp356;
+              const int32_t tmp358 = !(tmp356);
+              if (tmp358) {
+                const float tmp360 = (tmp348 + tmp346);
+                const float tmp361 = (tmp360 / tmp327);
+                tmp347 = tmp361;
+                const int32_t tmp363 = -(tmp361 >= tmp28);
+                const int32_t tmp364 = (tmp363 & tmp26);
+                const int32_t tmp365 = -(tmp361 < tmp255);
+                const int32_t tmp366 = (tmp365 & tmp26);
+                const int32_t tmp367 = (tmp364 & tmp366);
+                tmp298 = tmp367;
+              } else {
+              }
+              const int32_t tmp369(tmp298);
+              if (tmp369) {
+                const float tmp371(tmp347);
+                tmp305 = tmp371;
+                const float tmp373 = (tmp132 * tmp371);
+                const float tmp374 = (tmp129 + tmp373);
+                const float tmp375 = (tmp133 * tmp371);
+                const float tmp376 = (tmp130 + tmp375);
+                const float tmp377 = (tmp134 * tmp371);
+                const float tmp378 = (tmp131 + tmp377);
+                tmp299 = tmp374;
+                tmp300 = tmp376;
+                tmp301 = tmp378;
+                const float tmp382 = (tmp374 - tmp313);
+                const float tmp383 = (tmp382 / tmp287);
+                const float tmp384 = (tmp376 - tmp316);
+                const float tmp385 = (tmp384 / tmp287);
+                const float tmp386 = (tmp378 - tmp319);
+                const float tmp387 = (tmp386 / tmp287);
+                const float tmp388 = (tmp132 * tmp383);
+                const float tmp389 = (tmp133 * tmp385);
+                const float tmp390 = (tmp388 + tmp389);
+                const float tmp391 = (tmp134 * tmp387);
+                const float tmp392 = (tmp390 + tmp391);
+                const int32_t tmp393 = -(tmp392 < tmp25);
+                const int32_t tmp394 = (tmp393 & tmp26);
+                tmp306 = tmp394;
+                const int32_t tmp396 = -(tmp394 == tmp26);
+                const int32_t tmp397 = (tmp396 & tmp26);
+                const int32_t tmp398 = !(tmp397);
+                const int32_t tmp399 = !(tmp398);
+                const float tmp400 = -(tmp383);
+                const float tmp401 = (tmp399) ? (tmp383) : (tmp400);
+                const float tmp402 = -(tmp385);
+                const float tmp403 = (tmp399) ? (tmp385) : (tmp402);
+                const float tmp404 = -(tmp387);
+                const float tmp405 = (tmp399) ? (tmp387) : (tmp404);
+                tmp302 = tmp401;
+                tmp303 = tmp403;
+                tmp304 = tmp405;
+              } else {
+              }
+            } else {
+            }
+            const int32_t tmp409(tmp298);
+            const float tmp410(tmp299);
+            const float tmp411(tmp300);
+            const float tmp412(tmp301);
+            const float tmp413(tmp302);
+            const float tmp414(tmp303);
+            const float tmp415(tmp304);
+            const float tmp416(tmp305);
+            const int32_t tmp417(tmp306);
+            tmp256 = tmp409;
+            tmp257 = tmp410;
+            tmp258 = tmp411;
+            tmp259 = tmp412;
+            tmp260 = tmp413;
+            tmp261 = tmp414;
+            tmp262 = tmp415;
+            tmp263 = tmp416;
+            tmp264 = tmp417;
+            device float* tmp7270 = tmp7179.get7(runtime_, mem_alloc_).val;
+            const auto tmp427 = *tmp7270;
+            device float* tmp7280 = tmp7179.get8(runtime_, mem_alloc_).val;
+            const auto tmp428 = *tmp7280;
+            device float* tmp7290 = tmp7179.get9(runtime_, mem_alloc_).val;
+            const auto tmp429 = *tmp7290;
+            device float* tmp7300 = tmp7179.get10(runtime_, mem_alloc_).val;
+            const auto tmp430 = *tmp7300;
+            device float* tmp7310 = tmp7179.get11(runtime_, mem_alloc_).val;
+            const auto tmp431 = *tmp7310;
+            device int32_t* tmp7320 = tmp7179.get12(runtime_, mem_alloc_).val;
+            const auto tmp432 = *tmp7320;
+            tmp265 = tmp427;
+            tmp266 = tmp428;
+            tmp267 = tmp429;
+            tmp268 = tmp430;
+            tmp269 = tmp431;
+            tmp270 = tmp432;
+          } else {
+            S5 tmp7326 = tmp7175.get1(runtime_, mem_alloc_);
+            const int32_t tmp7597 = (tmp175 & tmp7632);
+            S5_ch tmp7329 = tmp7326.children(tmp7597);
+            device float* tmp7330 = tmp7329.get0(runtime_, mem_alloc_).val;
+            const auto tmp440 = *tmp7330;
+            device float* tmp7340 = tmp7329.get1(runtime_, mem_alloc_).val;
+            const auto tmp442 = *tmp7340;
+            device float* tmp7350 = tmp7329.get2(runtime_, mem_alloc_).val;
+            const auto tmp444 = *tmp7350;
+            device float* tmp7360 = tmp7329.get3(runtime_, mem_alloc_).val;
+            const auto tmp446 = *tmp7360;
+            int32_t tmp453(0);
+            float tmp454(0);
+            float tmp455(0);
+            float tmp456(0);
+            float tmp457(0);
+            float tmp458(0);
+            float tmp459(0);
+            float tmp460(0);
+            int32_t tmp461(0);
+            tmp461 = tmp26;
+            const float tmp463 = (tmp129 - tmp440);
+            const float tmp464 = (tmp130 - tmp442);
+            const float tmp465 = (tmp131 - tmp444);
+            const float tmp466 = (tmp132 * tmp132);
+            const float tmp467 = (tmp133 * tmp133);
+            const float tmp468 = (tmp466 + tmp467);
+            const float tmp469 = (tmp134 * tmp134);
+            const float tmp470 = (tmp468 + tmp469);
+            const float tmp471 = (tmp463 * tmp132);
+            const float tmp472 = (tmp464 * tmp133);
+            const float tmp473 = (tmp471 + tmp472);
+            const float tmp474 = (tmp465 * tmp134);
+            const float tmp475 = (tmp473 + tmp474);
+            const float tmp476 = (tmp463 * tmp463);
+            const float tmp477 = (tmp464 * tmp464);
+            const float tmp478 = (tmp476 + tmp477);
+            const float tmp479 = (tmp465 * tmp465);
+            const float tmp480 = (tmp478 + tmp479);
+            const float tmp481 = (tmp446 * tmp446);
+            const float tmp482 = (tmp480 - tmp481);
+            const float tmp483 = (tmp475 * tmp475);
+            const float tmp484 = (tmp470 * tmp482);
+            const float tmp485 = (tmp483 - tmp484);
+            const int32_t tmp486 = -(tmp485 >= tmp25);
+            const int32_t tmp487 = (tmp486 & tmp26);
+            if (tmp487) {
+              const float tmp489 = sqrt(tmp485);
+              float tmp490(0);
+              const float tmp491 = -(tmp475);
+              const float tmp492 = (tmp491 - tmp489);
+              const float tmp493 = (tmp492 / tmp470);
+              tmp490 = tmp493;
+              const int32_t tmp495 = -(tmp493 >= tmp28);
+              const int32_t tmp496 = (tmp495 & tmp26);
+              const int32_t tmp497 = -(tmp493 < tmp255);
+              const int32_t tmp498 = (tmp497 & tmp26);
+              const int32_t tmp499 = (tmp496 & tmp498);
+              tmp453 = tmp499;
+              const int32_t tmp501 = !(tmp499);
+              if (tmp501) {
+                const float tmp503 = (tmp491 + tmp489);
+                const float tmp504 = (tmp503 / tmp470);
+                tmp490 = tmp504;
+                const int32_t tmp506 = -(tmp504 >= tmp28);
+                const int32_t tmp507 = (tmp506 & tmp26);
+                const int32_t tmp508 = -(tmp504 < tmp255);
+                const int32_t tmp509 = (tmp508 & tmp26);
+                const int32_t tmp510 = (tmp507 & tmp509);
+                tmp453 = tmp510;
+              } else {
+              }
+              const int32_t tmp512(tmp453);
+              if (tmp512) {
+                const float tmp514(tmp490);
+                tmp460 = tmp514;
+                const float tmp516 = (tmp132 * tmp514);
+                const float tmp517 = (tmp129 + tmp516);
+                const float tmp518 = (tmp133 * tmp514);
+                const float tmp519 = (tmp130 + tmp518);
+                const float tmp520 = (tmp134 * tmp514);
+                const float tmp521 = (tmp131 + tmp520);
+                tmp454 = tmp517;
+                tmp455 = tmp519;
+                tmp456 = tmp521;
+                const float tmp525 = (tmp517 - tmp440);
+                const float tmp526 = (tmp525 / tmp446);
+                const float tmp527 = (tmp519 - tmp442);
+                const float tmp528 = (tmp527 / tmp446);
+                const float tmp529 = (tmp521 - tmp444);
+                const float tmp530 = (tmp529 / tmp446);
+                const float tmp531 = (tmp132 * tmp526);
+                const float tmp532 = (tmp133 * tmp528);
+                const float tmp533 = (tmp531 + tmp532);
+                const float tmp534 = (tmp134 * tmp530);
+                const float tmp535 = (tmp533 + tmp534);
+                const int32_t tmp536 = -(tmp535 < tmp25);
+                const int32_t tmp537 = (tmp536 & tmp26);
+                tmp461 = tmp537;
+                const int32_t tmp539 = -(tmp537 == tmp26);
+                const int32_t tmp540 = (tmp539 & tmp26);
+                const int32_t tmp541 = !(tmp540);
+                const int32_t tmp542 = !(tmp541);
+                const float tmp543 = -(tmp526);
+                const float tmp544 = (tmp542) ? (tmp526) : (tmp543);
+                const float tmp545 = -(tmp528);
+                const float tmp546 = (tmp542) ? (tmp528) : (tmp545);
+                const float tmp547 = -(tmp530);
+                const float tmp548 = (tmp542) ? (tmp530) : (tmp547);
+                tmp457 = tmp544;
+                tmp458 = tmp546;
+                tmp459 = tmp548;
+              } else {
+              }
+            } else {
+            }
+            const int32_t tmp552(tmp453);
+            const float tmp553(tmp454);
+            const float tmp554(tmp455);
+            const float tmp555(tmp456);
+            const float tmp556(tmp457);
+            const float tmp557(tmp458);
+            const float tmp558(tmp459);
+            const float tmp559(tmp460);
+            const int32_t tmp560(tmp461);
+            tmp256 = tmp552;
+            tmp257 = tmp553;
+            tmp258 = tmp554;
+            tmp259 = tmp555;
+            tmp260 = tmp556;
+            tmp261 = tmp557;
+            tmp262 = tmp558;
+            tmp263 = tmp559;
+            tmp264 = tmp560;
+            device float* tmp7370 = tmp7329.get4(runtime_, mem_alloc_).val;
+            const auto tmp570 = *tmp7370;
+            device float* tmp7380 = tmp7329.get5(runtime_, mem_alloc_).val;
+            const auto tmp571 = *tmp7380;
+            device float* tmp7390 = tmp7329.get6(runtime_, mem_alloc_).val;
+            const auto tmp572 = *tmp7390;
+            device float* tmp7400 = tmp7329.get7(runtime_, mem_alloc_).val;
+            const auto tmp573 = *tmp7400;
+            device float* tmp7410 = tmp7329.get8(runtime_, mem_alloc_).val;
+            const auto tmp574 = *tmp7410;
+            device int32_t* tmp7420 = tmp7329.get9(runtime_, mem_alloc_).val;
+            const auto tmp575 = *tmp7420;
+            tmp265 = tmp570;
+            tmp266 = tmp571;
+            tmp267 = tmp572;
+            tmp268 = tmp573;
+            tmp269 = tmp574;
+            tmp270 = tmp575;
+          }
+          const int32_t tmp582(tmp256);
+          const float tmp583(tmp257);
+          const float tmp584(tmp258);
+          const float tmp585(tmp259);
+          const float tmp586(tmp260);
+          const float tmp587(tmp261);
+          const float tmp588(tmp262);
+          const float tmp589(tmp263);
+          const int32_t tmp590(tmp264);
+          const float tmp591(tmp265);
+          const float tmp592(tmp266);
+          const float tmp593(tmp267);
+          const float tmp594(tmp268);
+          const float tmp595(tmp269);
+          const int32_t tmp596(tmp270);
+          if (tmp582) {
+            tmp136 = tmp26;
+            tmp137 = tmp589;
+            tmp139 = tmp583;
+            tmp140 = tmp584;
+            tmp141 = tmp585;
+            tmp142 = tmp586;
+            tmp143 = tmp587;
+            tmp144 = tmp588;
+            tmp145 = tmp590;
+            tmp147 = tmp591;
+            tmp148 = tmp592;
+            tmp149 = tmp593;
+            tmp150 = tmp594;
+            tmp151 = tmp595;
+            tmp152 = tmp596;
+          } else {
+          }
+        } else {
+        }
+      }
+      const int32_t tmp613(tmp136);
+      const float tmp614(tmp139);
+      const float tmp615(tmp140);
+      const float tmp616(tmp141);
+      const float tmp617(tmp142);
+      const float tmp618(tmp143);
+      const float tmp619(tmp144);
+      const int32_t tmp620(tmp145);
+      const float tmp621(tmp147);
+      const float tmp622(tmp148);
+      const float tmp623(tmp149);
+      const float tmp624(tmp150);
+      const float tmp625(tmp151);
+      const int32_t tmp626(tmp152);
+      const float tmp627(tmp107);
+      if (tmp613) {
+        const float tmp629(tmp109);
+        const float tmp630(tmp111);
+        const float tmp631(tmp113);
+        int32_t tmp632(0);
+        float tmp633(0);
+        float tmp634(0);
+        float tmp635(0);
+        const int32_t tmp636 = -(tmp626 == tmp20);
+        const int32_t tmp637 = (tmp636 & tmp26);
+        if (tmp637) {
+          const auto tmp639 = metal_rand_f32(rand_state_);
+          const float tmp640 = (tmp639 * tmp27);
+          const float tmp641 = cos(tmp640);
+          const float tmp642 = sin(tmp640);
+          const auto tmp643 = metal_rand_f32(rand_state_);
+          const float tmp644 = (tmp643 + tmp643);
+          const float tmp645 = (tmp644 - tmp23);
+          const float tmp646 = (tmp645 * tmp645);
+          const float tmp647 = (tmp23 - tmp646);
+          const float tmp648 = sqrt(tmp647);
+          const float tmp649 = (tmp648 * tmp641);
+          const float tmp650 = (tmp617 + tmp649);
+          const float tmp651 = (tmp648 * tmp642);
+          const float tmp652 = (tmp618 + tmp651);
+          const float tmp653 = (tmp619 + tmp645);
+          tmp632 = tmp26;
+          tmp633 = tmp650;
+          tmp634 = tmp652;
+          tmp635 = tmp653;
+        } else {
+          const int32_t tmp658 = -(tmp626 == tmp26);
+          const int32_t tmp659 = (tmp658 & tmp26);
+          if (tmp659) {
+            const float tmp661 = (tmp627 * tmp627);
+            const float tmp662 = (tmp629 * tmp629);
+            const float tmp663 = (tmp661 + tmp662);
+            const float tmp664 = (tmp630 * tmp630);
+            const float tmp665 = (tmp663 + tmp664);
+            const float tmp666 = sqrt(tmp665);
+            const float tmp667 = (tmp23 / tmp666);
+            const float tmp668 = (tmp667 * tmp627);
+            const float tmp669 = (tmp667 * tmp629);
+            const float tmp670 = (tmp667 * tmp630);
+            const auto tmp671 = metal_rand_f32(rand_state_);
+            const float tmp672 = (tmp671 * tmp27);
+            const float tmp673 = cos(tmp672);
+            const float tmp674 = sin(tmp672);
+            const auto tmp675 = metal_rand_f32(rand_state_);
+            const float tmp676 = (tmp675 + tmp675);
+            const float tmp677 = (tmp676 - tmp23);
+            const float tmp678 = (tmp677 * tmp677);
+            const float tmp679 = (tmp23 - tmp678);
+            const float tmp680 = sqrt(tmp679);
+            const float tmp681 = (tmp668 * tmp617);
+            const float tmp682 = (tmp669 * tmp618);
+            const float tmp683 = (tmp681 + tmp682);
+            const float tmp684 = (tmp670 * tmp619);
+            const float tmp685 = (tmp683 + tmp684);
+            const float tmp686 = (tmp685 + tmp685);
+            const float tmp687 = (tmp686 * tmp617);
+            const float tmp688 = (tmp668 - tmp687);
+            const float tmp689 = (tmp680 * tmp673);
+            const float tmp690 = (tmp624 * tmp689);
+            const float tmp691 = (tmp688 + tmp690);
+            const float tmp692 = (tmp686 * tmp618);
+            const float tmp693 = (tmp669 - tmp692);
+            const float tmp694 = (tmp680 * tmp674);
+            const float tmp695 = (tmp624 * tmp694);
+            const float tmp696 = (tmp693 + tmp695);
+            const float tmp697 = (tmp686 * tmp619);
+            const float tmp698 = (tmp670 - tmp697);
+            const float tmp699 = (tmp624 * tmp677);
+            const float tmp700 = (tmp698 + tmp699);
+            const float tmp701 = (tmp691 * tmp617);
+            const float tmp702 = (tmp696 * tmp618);
+            const float tmp703 = (tmp701 + tmp702);
+            const float tmp704 = (tmp700 * tmp619);
+            const float tmp705 = (tmp703 + tmp704);
+            const int32_t tmp706 = -(tmp705 > tmp25);
+            const int32_t tmp707 = (tmp706 & tmp26);
+            tmp632 = tmp707;
+            tmp633 = tmp691;
+            tmp634 = tmp696;
+            tmp635 = tmp700;
+          } else {
+            const int32_t tmp712 = !(tmp620);
+            const int32_t tmp713 = !(tmp712);
+            const float tmp714 = (tmp23 / tmp625);
+            const float tmp715 = (tmp713) ? (tmp714) : (tmp625);
+            const float tmp716 = (tmp627 * tmp627);
+            const float tmp717 = (tmp629 * tmp629);
+            const float tmp718 = (tmp716 + tmp717);
+            const float tmp719 = (tmp630 * tmp630);
+            const float tmp720 = (tmp718 + tmp719);
+            const float tmp721 = sqrt(tmp720);
+            const float tmp722 = (tmp23 / tmp721);
+            const float tmp723 = (tmp722 * tmp627);
+            const float tmp724 = (tmp722 * tmp629);
+            const float tmp725 = (tmp722 * tmp630);
+            const float tmp726 = (tmp723 * tmp617);
+            const float tmp727 = (tmp724 * tmp618);
+            const float tmp728 = (tmp726 + tmp727);
+            const float tmp729 = (tmp725 * tmp619);
+            const float tmp730 = (tmp728 + tmp729);
+            const float tmp731 = -(tmp730);
+            const float tmp732 =  min(tmp731, tmp23);
+            const float tmp733 = (tmp732 * tmp732);
+            const float tmp734 = (tmp23 - tmp733);
+            const float tmp735 = sqrt(tmp734);
+            float tmp736(0);
+            float tmp737(0);
+            float tmp738(0);
+            const float tmp739 = (tmp715 * tmp735);
+            const int32_t tmp740 = -(tmp739 > tmp23);
+            const int32_t tmp741 = (tmp740 & tmp26);
+            const float tmp742 = (tmp23 - tmp715);
+            const float tmp743 = (tmp715 + tmp23);
+            const float tmp744 = (tmp742 / tmp743);
+            const float tmp745 = (tmp744 * tmp744);
+            const auto tmp746 = metal_rand_f32(rand_state_);
+            const float tmp747 = (tmp23 - tmp745);
+            const float tmp748 = (tmp23 - tmp732);
+            const float tmp749 = (tmp748 * tmp748);
+            const float tmp750 = (tmp749 * tmp749);
+            const float tmp751 = (tmp748 * tmp750);
+            const float tmp752 = (tmp747 * tmp751);
+            const float tmp753 = (tmp745 + tmp752);
+            const int32_t tmp754 = -(tmp753 > tmp746);
+            const int32_t tmp755 = (tmp754 & tmp26);
+            const int32_t tmp756 = (tmp741 | tmp755);
+            if (tmp756) {
+              const float tmp758 = (tmp730 + tmp730);
+              const float tmp759 = (tmp758 * tmp617);
+              const float tmp760 = (tmp723 - tmp759);
+              const float tmp761 = (tmp758 * tmp618);
+              const float tmp762 = (tmp724 - tmp761);
+              const float tmp763 = (tmp758 * tmp619);
+              const float tmp764 = (tmp725 - tmp763);
+              tmp736 = tmp760;
+              tmp737 = tmp762;
+              tmp738 = tmp764;
+            } else {
+              const float tmp768 = (tmp732 * tmp617);
+              const float tmp769 = (tmp723 + tmp768);
+              const float tmp770 = (tmp715 * tmp769);
+              const float tmp771 = (tmp732 * tmp618);
+              const float tmp772 = (tmp724 + tmp771);
+              const float tmp773 = (tmp715 * tmp772);
+              const float tmp774 = (tmp732 * tmp619);
+              const float tmp775 = (tmp725 + tmp774);
+              const float tmp776 = (tmp715 * tmp775);
+              const float tmp777 = (tmp770 * tmp770);
+              const float tmp778 = (tmp773 * tmp773);
+              const float tmp779 = (tmp777 + tmp778);
+              const float tmp780 = (tmp776 * tmp776);
+              const float tmp781 = (tmp779 + tmp780);
+              const float tmp782 = (tmp23 - tmp781);
+              const float tmp783 = abs(tmp782);
+              const float tmp784 = sqrt(tmp783);
+              const float tmp785 = -(tmp784);
+              const float tmp786 = (tmp785 * tmp617);
+              const float tmp787 = (tmp785 * tmp618);
+              const float tmp788 = (tmp785 * tmp619);
+              const float tmp789 = (tmp770 + tmp786);
+              const float tmp790 = (tmp773 + tmp787);
+              const float tmp791 = (tmp776 + tmp788);
+              tmp736 = tmp789;
+              tmp737 = tmp790;
+              tmp738 = tmp791;
+            }
+            const float tmp795(tmp736);
+            const float tmp796(tmp737);
+            const float tmp797(tmp738);
+            tmp632 = tmp26;
+            tmp633 = tmp795;
+            tmp634 = tmp796;
+            tmp635 = tmp797;
+          }
+        }
+        const int32_t tmp802(tmp632);
+        const float tmp803(tmp633);
+        const float tmp804(tmp634);
+        const float tmp805(tmp635);
+        if (tmp802) {
+          const float tmp807(tmp115);
+          const float tmp808 = (tmp807 * tmp621);
+          const float tmp809(tmp117);
+          const float tmp810 = (tmp809 * tmp622);
+          const float tmp811(tmp119);
+          const float tmp812 = (tmp811 * tmp623);
+          tmp115 = tmp808;
+          tmp117 = tmp810;
+          tmp119 = tmp812;
+          tmp101 = tmp614;
+          tmp103 = tmp615;
+          tmp105 = tmp616;
+          tmp107 = tmp803;
+          tmp109 = tmp804;
+          tmp111 = tmp805;
+          tmp113 = tmp631;
+          const int32_t tmp823(tmp121);
+          const int32_t tmp824 = (tmp823 + tmp26);
+          tmp121 = tmp824;
+        } else {
+          tmp115 = tmp25;
+          tmp117 = tmp25;
+          tmp119 = tmp25;
+          if (!tmp20) break;
+        }
+      } else {
+        const float tmp830 = (tmp627 * tmp627);
+        const float tmp831(tmp109);
+        const float tmp832 = (tmp831 * tmp831);
+        const float tmp833 = (tmp830 + tmp832);
+        const float tmp834(tmp111);
+        const float tmp835 = (tmp834 * tmp834);
+        const float tmp836 = (tmp833 + tmp835);
+        const float tmp837 = sqrt(tmp836);
+        const float tmp838 = (tmp23 / tmp837);
+        const float tmp839 = (tmp838 * tmp831);
+        const float tmp840 = (tmp839 + tmp23);
+        const float tmp841 = (tmp840 * tmp24);
+        const float tmp842(tmp115);
+        const float tmp843 = (tmp23 - tmp841);
+        const float tmp844 = (tmp840 * tmp22);
+        const float tmp845 = (tmp843 + tmp844);
+        const float tmp846 = (tmp842 * tmp845);
+        const float tmp847(tmp117);
+        const float tmp848 = (tmp840 * tmp21);
+        const float tmp849 = (tmp843 + tmp848);
+        const float tmp850 = (tmp847 * tmp849);
+        const float tmp851(tmp119);
+        const float tmp852 = (tmp843 + tmp841);
+        const float tmp853 = (tmp851 * tmp852);
+        tmp115 = tmp846;
+        tmp117 = tmp850;
+        tmp119 = tmp853;
+        if (!tmp20) break;
+      }
+    }
+    const float tmp858(tmp115);
+    const float tmp859(tmp117);
+    const float tmp860(tmp119);
+    S32 tmp7424(root_addr);
+    S0_ch tmp7426 = tmp7424.children(tmp20);
+    S1 tmp7427 = tmp7426.get0(runtime_, mem_alloc_);
+    const int32_t tmp7918 = (tmp7497 << tmp7494);
+    const int32_t tmp7697 = (tmp7501 + tmp7918);
+    S1_ch tmp7431 = tmp7427.children(tmp7697);
+    device float* tmp7432 = tmp7431.get0(runtime_, mem_alloc_).val;
+    const auto tmp862 = *tmp7432;
+    const float tmp863 = (tmp862 + tmp858);
+    *tmp7432 = tmp863;
+    device float* tmp7456 = tmp7431.get1(runtime_, mem_alloc_).val;
+    const auto tmp866 = *tmp7456;
+    const float tmp867 = (tmp866 + tmp859);
+    *tmp7456 = tmp867;
+    device float* tmp7480 = tmp7431.get2(runtime_, mem_alloc_).val;
+    const auto tmp870 = *tmp7480;
+    const float tmp871 = (tmp870 + tmp860);
+    *tmp7480 = tmp871;
+  } else {
+  }
+}
+
+}  // namespace
+kernel void mtl_k0041_render_pass_c4_0_0(
+    device byte* root_addr [[buffer(0)]],
+    device byte* global_tmps_addr [[buffer(1)]],
+    device byte* runtime_addr [[buffer(2)]],
+    device byte* print_assert_addr [[buffer(3)]],
+    const uint ugrid_size_ [[threads_per_grid]],
+    const uint utid_ [[thread_position_in_grid]]) {
+  // range_for, range known at compile time
+  const int total_elems = 131072;
+  const int begin_ = utid_ + 0;
+  const int end_ = total_elems + 0;
+  device auto *runtime_ = reinterpret_cast<device Runtime *>(runtime_addr);
+  device auto *mem_alloc_ = reinterpret_cast<device MemoryAllocator *>(runtime_ + 1);
+  for (int ii = begin_; ii < end_; ii += ugrid_size_) {
+    mtl_k0041_render_pass_c4_0_0_func(root_addr, global_tmps_addr, runtime_addr, print_assert_addr, ii);
+  }
+}
+
+
+
+
+
+                            * Taichi Core - Stack Traceback *                             
+==========================================================================================
+|                       Module |  Offset | Function                                      |
+|----------------------------------------------------------------------------------------|
+*               taichi_core.so |     126 | taichi::Logger::error(std::__1::basic_string< |
+                                         | char, std::__1::char_traits<char>, std::__1:: |
+                                         | allocator<char> > const&, bool)               |
+*               taichi_core.so |    9048 | taichi::lang::metal::KernelManager::Impl::reg |
+                                         | ister_taichi_kernel(std::__1::basic_string<ch |
+                                         | ar, std::__1::char_traits<char>, std::__1::al |
+                                         | locator<char> > const&, std::__1::basic_strin |
+                                         | g<char, std::__1::char_traits<char>, std::__1 |
+                                         | ::allocator<char> > const&, taichi::lang::met |
+                                         | al::TaichiKernelAttributes const&, taichi::la |
+                                         | ng::metal::KernelContextAttributes const&)    |
+*               taichi_core.so |     103 | taichi::lang::metal::compile_to_metal_executa |
+                                         | ble(taichi::lang::Kernel*, taichi::lang::meta |
+                                         | l::KernelManager*, taichi::lang::metal::Compi |
+                                         | ledStructs const*, taichi::lang::OffloadedStm |
+                                         | t*)                                           |
+*               taichi_core.so |      85 | taichi::lang::MetalProgramImpl::compile(taich |
+                                         | i::lang::Kernel*, taichi::lang::OffloadedStmt |
+                                         | *)                                            |
+*               taichi_core.so |     239 | taichi::lang::Program::compile(taichi::lang:: |
+                                         | Kernel&, taichi::lang::OffloadedStmt*)        |
+*               taichi_core.so |      67 | taichi::lang::Kernel::compile()               |
+*               taichi_core.so |      59 | taichi::lang::Kernel::operator()(taichi::lang |
+                                         | ::Kernel::LaunchContextBuilder&)              |
+*               taichi_core.so |     186 | void pybind11::cpp_function::initialize<taich |
+                                         | i::export_lang(pybind11::module_&)::$_26, voi |
+                                         | d, taichi::lang::Kernel*, taichi::lang::Kerne |
+                                         | l::LaunchContextBuilder&, pybind11::name, pyb |
+                                         | ind11::is_method, pybind11::sibling>(taichi:: |
+                                         | export_lang(pybind11::module_&)::$_26&&, void |
+                                         |  (*)(taichi::lang::Kernel*, taichi::lang::Ker |
+                                         | nel::LaunchContextBuilder&), pybind11::name c |
+                                         | onst&, pybind11::is_method const&, pybind11:: |
+                                         | sibling const&)::'lambda'(pybind11::detail::f |
+                                         | unction_call&)::__invoke(pybind11::detail::fu |
+                                         | nction_call&)                                 |
+*               taichi_core.so |    4434 | pybind11::cpp_function::dispatcher(_object*,  |
+                                         | _object*, _object*)                           |
+*                       Python |     206 | (null)                                        |
+*                       Python |     227 | (null)                                        |
+*                       Python |     143 | (null)                                        |
+*                       Python |     135 | (null)                                        |
+*                       Python |     201 | (null)                                        |
+*                       Python |     433 | (null)                                        |
+*                       Python |     420 | (null)                                        |
+*                       Python |   25342 | (null)                                        |
+*                       Python |    2467 | (null)                                        |
+*                       Python |     523 | (null)                                        |
+*                       Python |   25966 | (null)                                        |
+*                       Python |    2467 | (null)                                        |
+*                       Python |     523 | (null)                                        |
+*                       Python |     143 | (null)                                        |
+*                       Python |     150 | (null)                                        |
+*                       Python |     135 | (null)                                        |
+*                       Python |   25966 | (null)                                        |
+*                       Python |    2467 | (null)                                        |
+*                       Python |     257 | (null)                                        |
+*                       Python |     738 | (null)                                        |
+*                       Python |   25342 | (null)                                        |
+*                       Python |    2467 | (null)                                        |
+*                       Python |     100 | (null)                                        |
+*                       Python |     209 | (null)                                        |
+*                       Python |     890 | (null)                                        |
+*                       Python |    6915 | (null)                                        |
+*                       Python |      58 | (null)                                        |
+*                libdyld.dylib |       1 | (null)                                        |
+*                          ??? |       2 | (null)                                        |
+[Taichi] version 0.7.31, llvm 10.0.0, commit fa68168a, osx, python 3.7.7
+[TaiGLSL] version 0.0.11
+[Taichi] Starting on arch=metal
+==========================================================================================
+
+[38;2;255;165;000m
+Internal error occurred. Check out this page for possible solutions:
+https://taichi.readthedocs.io/en/stable/install.html#troubleshooting
+[0mTraceback (most recent call last):
+  File "main.py", line 133, in <module>
+    render_pass()
+  File "/Library/Frameworks/Python.framework/Versions/3.7/lib/python3.7/site-packages/taichi/lang/kernel_impl.py", line 671, in wrapped
+    return primal(*args, **kwargs)
+  File "/Library/Frameworks/Python.framework/Versions/3.7/lib/python3.7/site-packages/taichi/lang/kernel_impl.py", line 599, in __call__
+    return self.compiled_functions[key](*args)
+  File "/Library/Frameworks/Python.framework/Versions/3.7/lib/python3.7/site-packages/taichi/lang/kernel_impl.py", line 556, in func__
+    t_kernel(launch_ctx)
+RuntimeError: [kernel_manager.cpp:CompiledTaichiKernel@340] Failed to compile Metal kernel! Generated code:
+
+#include <metal_stdlib>
+#include <metal_compute>
+using namespace metal;
+namespace {
+using byte = char;
+
+template <typename T, typename G> T union_cast(G g) { static_assert(sizeof(T) == sizeof(G), "Size mismatch"); return *reinterpret_cast<thread const T *>(&g); } inline int ifloordiv(int lhs, int rhs) { const int intm = (lhs / rhs); return (((lhs < 0) != (rhs < 0) && lhs && (rhs * intm != lhs)) ? (intm - 1) : intm); } int32_t pow_i32(int32_t x, int32_t n) { int32_t tmp = x; int32_t ans = 1; while (n) { if (n & 1) ans *= tmp; tmp *= tmp; n >>= 1; } return ans; } float fatomic_fetch_add(device float *dest, const float operand) { bool ok = false; float old_val = 0.0f; while (!ok) { old_val = *dest; float new_val = (old_val + operand); ok = atomic_compare_exchange_weak_explicit( (device atomic_int *)dest, (thread int *)(&old_val), *((thread int *)(&new_val)), metal::memory_order_relaxed, metal::memory_order_relaxed); } return old_val; } float fatomic_fetch_min(device float *dest, const float operand) { bool ok = false; float old_val = 0.0f; while (!ok) { old_val = *dest; float new_val = (old_val < operand) ? old_val : operand; ok = atomic_compare_exchange_weak_explicit( (device atomic_int *)dest, (thread int *)(&old_val), *((thread int *)(&new_val)), metal::memory_order_relaxed, metal::memory_order_relaxed); } return old_val; } float fatomic_fetch_max(device float *dest, const float operand) { bool ok = false; float old_val = 0.0f; while (!ok) { old_val = *dest; float new_val = (old_val > operand) ? old_val : operand; ok = atomic_compare_exchange_weak_explicit( (device atomic_int *)dest, (thread int *)(&old_val), *((thread int *)(&new_val)), metal::memory_order_relaxed, metal::memory_order_relaxed); } return old_val; } struct RandState { uint32_t seed; }; uint32_t metal_rand_u32(device RandState * state) { device uint *sp = (device uint *)&(state->seed); bool done = false; uint32_t nxt = 0; while (!done) { uint32_t o = *sp; nxt = o * 1103515245 + 12345; done = atomic_compare_exchange_weak_explicit( (device atomic_uint *)sp, &o, nxt, metal::memory_order_relaxed, metal::memory_order_relaxed); } return nxt * 1000000007; } int32_t metal_rand_i32(device RandState * state) { return metal_rand_u32(state); } float metal_rand_f32(device RandState *state) { return metal_rand_u32(state) * (1.0f / 4294967296.0f); }
+
+constant constexpr int kTaichiMaxNumIndices = 8; constant constexpr int kTaichiNumChunks = 1024; constant constexpr int kAlignment = 8; using PtrOffset = int32_t; struct MemoryAllocator { atomic_int next; constant constexpr static int kInitOffset = 8; static inline bool is_valid(PtrOffset v) { return v >= kInitOffset; } }; struct ListManagerData { int32_t element_stride = 0; int32_t log2_num_elems_per_chunk = 0; atomic_int next; atomic_int chunks[kTaichiNumChunks]; struct ReservedElemPtrOffset { public: ReservedElemPtrOffset() = default; explicit ReservedElemPtrOffset(PtrOffset v) : val_(v) { } inline bool is_valid() const { return is_valid(val_); } inline static bool is_valid(PtrOffset v) { return MemoryAllocator::is_valid(v); } inline PtrOffset value() const { return val_; } private: PtrOffset val_{0}; }; }; struct NodeManagerData { using ElemIndex = ListManagerData::ReservedElemPtrOffset; ListManagerData data_list; ListManagerData free_list; ListManagerData recycled_list; atomic_int free_list_used; int recycled_list_size_backup; }; struct SNodeMeta { enum Type { Root = 0, Dense = 1, Bitmasked = 2, Dynamic = 3, Pointer = 4, BitStruct = 5, }; int32_t element_stride = 0; int32_t num_slots = 0; int32_t mem_offset_in_parent = 0; int32_t type = 0; }; struct SNodeExtractors { struct Extractor { int32_t start = 0; int32_t num_bits = 0; int32_t acc_offset = 0; int32_t num_elements_from_root = 0; }; Extractor extractors[kTaichiMaxNumIndices]; }; struct ElementCoords { int32_t at[kTaichiMaxNumIndices]; }; struct ListgenElement { ElementCoords coords; int32_t mem_offset = 0; struct BelongedNodeManager { int32_t id = -1; NodeManagerData::ElemIndex elem_idx; }; BelongedNodeManager belonged_nodemgr; inline bool in_root_buffer() const { return belonged_nodemgr.id < 0; } };
+
+struct Runtime {
+  SNodeMeta snode_metas[34];
+  SNodeExtractors snode_extractors[34];
+  ListManagerData snode_lists[34];
+  NodeManagerData snode_allocators[34];
+  NodeManagerData::ElemIndex ambient_indices[34];
+  uint32_t rand_seeds[65536];
+};
+
+[[maybe_unused]] PtrOffset mtl_memalloc_alloc(device MemoryAllocator *ma, int32_t size) { size = ((size + kAlignment - 1) / kAlignment) * kAlignment; return atomic_fetch_add_explicit(&ma->next, size, metal::memory_order_relaxed); } [[maybe_unused]] device char *mtl_memalloc_to_ptr(device MemoryAllocator *ma, PtrOffset offs) { return reinterpret_cast<device char *>(ma + 1) + offs; } struct ListManager { using ReservedElemPtrOffset = ListManagerData::ReservedElemPtrOffset; device ListManagerData *lm_data; device MemoryAllocator *mem_alloc; inline int num_active() { return atomic_load_explicit(&(lm_data->next), metal::memory_order_relaxed); } inline void resize(int sz) { atomic_store_explicit(&(lm_data->next), sz, metal::memory_order_relaxed); } inline void clear() { resize(0); } ReservedElemPtrOffset reserve_new_elem() { const int elem_idx = atomic_fetch_add_explicit( &lm_data->next, 1, metal::memory_order_relaxed); const int chunk_idx = get_chunk_index(elem_idx); const PtrOffset chunk_ptr_offs = ensure_chunk(chunk_idx); const auto offset = get_elem_ptr_offs_from_chunk(elem_idx, chunk_ptr_offs); return ReservedElemPtrOffset{offset}; } device char *append() { auto reserved = reserve_new_elem(); return get_ptr(reserved); } template <typename T> void append(thread const T &elem) { device char *ptr = append(); thread char *elem_ptr = (thread char *)(&elem); for (int i = 0; i < lm_data->element_stride; ++i) { *ptr = *elem_ptr; ++ptr; ++elem_ptr; } } device char *get_ptr(ReservedElemPtrOffset offs) { return mtl_memalloc_to_ptr(mem_alloc, offs.value()); } device char *get_ptr(int i) { const int chunk_idx = get_chunk_index(i); const PtrOffset chunk_ptr_offs = atomic_load_explicit( lm_data->chunks + chunk_idx, metal::memory_order_relaxed); return get_elem_from_chunk(i, chunk_ptr_offs); } template <typename T> T get(int i) { return *reinterpret_cast<device T *>(get_ptr(i)); } private: inline int get_chunk_index(int elem_idx) const { return elem_idx >> lm_data->log2_num_elems_per_chunk; } PtrOffset ensure_chunk(int chunk_idx) { PtrOffset offs = 0; const int chunk_bytes = (lm_data->element_stride << lm_data->log2_num_elems_per_chunk); while (true) { int stored = 0; const bool is_me = atomic_compare_exchange_weak_explicit( lm_data->chunks + chunk_idx, &stored, 1, metal::memory_order_relaxed, metal::memory_order_relaxed); if (is_me) { offs = mtl_memalloc_alloc(mem_alloc, chunk_bytes); atomic_store_explicit(lm_data->chunks + chunk_idx, offs, metal::memory_order_relaxed); break; } else if (stored > 1) { offs = stored; break; } } return offs; } PtrOffset get_elem_ptr_offs_from_chunk(int elem_idx, PtrOffset chunk_ptr_offs) { const uint32_t mask = ((1 << lm_data->log2_num_elems_per_chunk) - 1); return chunk_ptr_offs + ((elem_idx & mask) * lm_data->element_stride); } device char *get_elem_from_chunk(int elem_idx, PtrOffset chunk_ptr_offs) { const auto offs = get_elem_ptr_offs_from_chunk(elem_idx, chunk_ptr_offs); return mtl_memalloc_to_ptr(mem_alloc, offs); } }; struct NodeManager { using ElemIndex = NodeManagerData::ElemIndex; device NodeManagerData *nm_data; device MemoryAllocator *mem_alloc; ElemIndex allocate() { ListManager free_list; free_list.lm_data = &(nm_data->free_list); free_list.mem_alloc = mem_alloc; ListManager data_list; data_list.lm_data = &(nm_data->data_list); data_list.mem_alloc = mem_alloc; const int cur_used = atomic_fetch_add_explicit( &(nm_data->free_list_used), 1, metal::memory_order_relaxed); if (cur_used < free_list.num_active()) { return free_list.get<ElemIndex>(cur_used); } return data_list.reserve_new_elem(); } device byte *get(ElemIndex i) { ListManager data_list; data_list.lm_data = &(nm_data->data_list); data_list.mem_alloc = mem_alloc; return data_list.get_ptr(i); } void recycle(ElemIndex i) { ListManager recycled_list; recycled_list.lm_data = &(nm_data->recycled_list); recycled_list.mem_alloc = mem_alloc; recycled_list.append(i); } }; class SNodeRep_dense { public: void init(device byte * addr) { addr_ = addr; } inline device byte *addr() { return addr_; } inline bool is_active(int) { return true; } inline void activate(int) { } inline void deactivate(int) { } private: device byte *addr_ = nullptr; }; using SNodeRep_root = SNodeRep_dense; class SNodeRep_bitmasked { public: constant static constexpr int kBitsPerMask = (sizeof(uint32_t) * 8); void init(device byte * addr, int meta_offset) { addr_ = addr; meta_offset_ = meta_offset; } inline device byte *addr() { return addr_; } bool is_active(int i) { device auto *ptr = to_bitmask_ptr(i); uint32_t bits = atomic_load_explicit(ptr, metal::memory_order_relaxed); return ((bits >> (i % kBitsPerMask)) & 1); } void activate(int i) { device auto *ptr = to_bitmask_ptr(i); const uint32_t mask = (1 << (i % kBitsPerMask)); atomic_fetch_or_explicit(ptr, mask, metal::memory_order_relaxed); } void deactivate(int i) { device auto *ptr = to_bitmask_ptr(i); const uint32_t mask = ~(1 << (i % kBitsPerMask)); atomic_fetch_and_explicit(ptr, mask, metal::memory_order_relaxed); } private: inline device atomic_uint *to_bitmask_ptr(int i) { return reinterpret_cast<device atomic_uint *>(addr_ + meta_offset_) + (i / kBitsPerMask); } device byte *addr_ = nullptr; int32_t meta_offset_ = 0; }; class SNodeRep_dynamic { public: void init(device byte * addr, int meta_offset) { addr_ = addr; meta_offset_ = meta_offset; } inline device byte *addr() { return addr_; } bool is_active(int i) { const auto n = atomic_load_explicit(to_meta_ptr(), metal::memory_order_relaxed); return i < n; } void activate(int i) { device auto *ptr = to_meta_ptr(); atomic_fetch_max_explicit(ptr, (i + 1), metal::memory_order_relaxed); return; } void deactivate() { device auto *ptr = to_meta_ptr(); atomic_store_explicit(ptr, 0, metal::memory_order_relaxed); } int append(int32_t data) { device auto *ptr = to_meta_ptr(); int me = atomic_fetch_add_explicit(ptr, 1, metal::memory_order_relaxed); *(reinterpret_cast<device int32_t *>(addr_) + me) = data; return me; } int length() { return atomic_load_explicit(to_meta_ptr(), metal::memory_order_relaxed); } private: inline device atomic_int *to_meta_ptr() { return reinterpret_cast<device atomic_int *>(addr_ + meta_offset_); } device byte *addr_ = nullptr; int32_t meta_offset_ = 0; }; class SNodeRep_pointer { public: using ElemIndex = NodeManagerData::ElemIndex; void init(device byte * addr, NodeManager nm, ElemIndex ambient_idx) { addr_ = addr; nm_ = nm; ambient_idx_ = ambient_idx; } device byte *child_or_ambient_addr(int i) { auto nm_idx = to_nodemgr_idx(addr_, i); nm_idx = nm_idx.is_valid() ? nm_idx : ambient_idx_; return nm_.get(nm_idx); } inline bool is_active(int i) { return is_active(addr_, i); } void activate(int i) { device auto *nm_idx_ptr = to_nodemgr_idx_ptr(addr_, i); auto nm_idx_val = atomic_load_explicit(nm_idx_ptr, metal::memory_order_relaxed); while (!ElemIndex::is_valid(nm_idx_val)) { nm_idx_val = 0; const bool is_me = atomic_compare_exchange_weak_explicit( nm_idx_ptr, &nm_idx_val, 1, metal::memory_order_relaxed, metal::memory_order_relaxed); if (is_me) { nm_idx_val = nm_.allocate().value(); atomic_store_explicit(nm_idx_ptr, nm_idx_val, metal::memory_order_relaxed); break; } else if (ElemIndex::is_valid(nm_idx_val)) { break; } } } void deactivate(int i) { device auto *nm_idx_ptr = to_nodemgr_idx_ptr(addr_, i); const auto old_nm_idx_val = atomic_exchange_explicit( nm_idx_ptr, 0, metal::memory_order_relaxed); const auto old_nm_idx = ElemIndex(old_nm_idx_val); if (!old_nm_idx.is_valid()) { return; } nm_.recycle(old_nm_idx); } static inline device atomic_int *to_nodemgr_idx_ptr(device byte * addr, int ch_i) { return reinterpret_cast<device atomic_int *>(addr + ch_i * sizeof(ElemIndex)); } static inline ElemIndex to_nodemgr_idx(device byte * addr, int ch_i) { device auto *ptr = to_nodemgr_idx_ptr(addr, ch_i); const auto v = atomic_load_explicit(ptr, metal::memory_order_relaxed); return ElemIndex(v); } static bool is_active(device byte * addr, int ch_i) { return to_nodemgr_idx(addr, ch_i).is_valid(); } private: device byte *addr_; NodeManager nm_; ElemIndex ambient_idx_; }; [[maybe_unused]] int is_active(device byte *addr, SNodeMeta meta, int i) { if (meta.type == SNodeMeta::Root || meta.type == SNodeMeta::Dense) { return true; } else if (meta.type == SNodeMeta::Dynamic) { SNodeRep_dynamic rep; rep.init(addr, meta.num_slots * meta.element_stride); return rep.is_active(i); } else if (meta.type == SNodeMeta::Bitmasked) { SNodeRep_bitmasked rep; rep.init(addr, meta.num_slots * meta.element_stride); return rep.is_active(i); } else if (meta.type == SNodeMeta::Pointer) { return SNodeRep_pointer::is_active(addr, i); } return false; } [[maybe_unused]] void refine_coordinates( thread const ElementCoords &parent, device const SNodeExtractors &child_extrators, int l, thread ElementCoords *child) { for (int i = 0; i < kTaichiMaxNumIndices; ++i) { device const auto &ex = child_extrators.extractors[i]; const int mask = ((1 << ex.num_bits) - 1); const int addition = ((l >> ex.acc_offset) & mask); child->at[i] = ((parent.at[i] << ex.num_bits) | addition); } } [[maybe_unused]] device byte *mtl_lgen_snode_addr( thread const ListgenElement &lgen, device byte *root_addr, device Runtime *rtm, device MemoryAllocator *mem_alloc) { if (lgen.in_root_buffer()) { return root_addr + lgen.mem_offset; } NodeManager nm; nm.nm_data = (rtm->snode_allocators + lgen.belonged_nodemgr.id); nm.mem_alloc = mem_alloc; device byte *addr = nm.get(lgen.belonged_nodemgr.elem_idx); return addr + lgen.mem_offset; } [[maybe_unused]] void run_gc_compact_free_list( device NodeManagerData *nm_data, device MemoryAllocator *mem_alloc, const int tid, const int grid_size) { NodeManager nm; nm.nm_data = nm_data; nm.mem_alloc = mem_alloc; ListManager free_list; free_list.lm_data = &(nm.nm_data->free_list); free_list.mem_alloc = nm.mem_alloc; const int free_size = free_list.num_active(); const int free_used = atomic_load_explicit(&(nm.nm_data->free_list_used), metal::memory_order_relaxed); int num_to_copy = 0; if (free_used * 2 > free_size) { num_to_copy = free_size - free_used; } else { num_to_copy = free_used; } const int offs = free_size - num_to_copy; using ElemIndex = NodeManager::ElemIndex; for (int ii = tid; ii < num_to_copy; ii += grid_size) { device auto *dest = reinterpret_cast<device ElemIndex *>(free_list.get_ptr(ii)); *dest = free_list.get<ElemIndex>(ii + offs); } } [[maybe_unused]] void run_gc_reset_free_list( device NodeManagerData *nm_data, device MemoryAllocator *mem_alloc) { NodeManager nm; nm.nm_data = nm_data; nm.mem_alloc = mem_alloc; ListManager free_list; free_list.lm_data = &(nm.nm_data->free_list); free_list.mem_alloc = nm.mem_alloc; const int free_size = free_list.num_active(); const int free_used = atomic_exchange_explicit( &(nm.nm_data->free_list_used), 0, metal::memory_order_relaxed); int free_remaining = free_size - free_used; free_remaining = free_remaining > 0 ? free_remaining : 0; free_list.resize(free_remaining); nm.nm_data->recycled_list_size_backup = atomic_exchange_explicit( &(nm.nm_data->recycled_list.next), 0, metal::memory_order_relaxed); } struct GCMoveRecycledToFreeThreadParams { int thread_position_in_threadgroup; int threadgroup_position_in_grid; int threadgroups_per_grid; int threads_per_threadgroup; }; [[maybe_unused]] void run_gc_move_recycled_to_free( device NodeManagerData *nm_data, device MemoryAllocator *mem_alloc, thread const GCMoveRecycledToFreeThreadParams &thparams) { NodeManager nm; nm.nm_data = nm_data; nm.mem_alloc = mem_alloc; ListManager free_list; free_list.lm_data = &(nm.nm_data->free_list); free_list.mem_alloc = nm.mem_alloc; ListManager recycled_list; recycled_list.lm_data = &(nm.nm_data->recycled_list); recycled_list.mem_alloc = nm.mem_alloc; ListManager data_list; data_list.lm_data = &(nm.nm_data->data_list); data_list.mem_alloc = nm.mem_alloc; const int kInt32Stride = sizeof(int32_t); const int recycled_size = nm.nm_data->recycled_list_size_backup; using ElemIndex = NodeManager::ElemIndex; for (int ii = thparams.threadgroup_position_in_grid; ii < recycled_size; ii += thparams.threadgroups_per_grid) { const auto elem_idx = recycled_list.get<ElemIndex>(ii); device char *ptr = nm.get(elem_idx); device const char *ptr_end = ptr + data_list.lm_data->element_stride; const int ptr_mod = ((int64_t)(ptr) % kInt32Stride); if (ptr_mod) { device char *new_ptr = ptr + kInt32Stride - ptr_mod; if (thparams.thread_position_in_threadgroup == 0) { for (device char *p = ptr; p < new_ptr; ++p) { *p = 0; } } ptr = new_ptr; } ptr += (thparams.thread_position_in_threadgroup * kInt32Stride); while ((ptr + kInt32Stride) <= ptr_end) { *reinterpret_cast<device int32_t *>(ptr) = 0; ptr += (kInt32Stride * thparams.threads_per_threadgroup); } while (ptr < ptr_end) { *ptr = 0; ++ptr; } if (thparams.thread_position_in_threadgroup == 0) { free_list.append(elem_idx); } } }
+
+struct SNodeBitPointer { device uint32_t *base; uint32_t offset; SNodeBitPointer(device byte * b, uint32_t o) : base((device uint32_t *)b), offset(o) { } }; template <typename C> C mtl_float_to_custom_int(float f) { const int32_t delta_bits = (union_cast<int32_t>(f) & 0x80000000) | union_cast<int32_t>(0.5f); const float delta = union_cast<float>(delta_bits); return static_cast<C>(f + delta); } void mtl_set_partial_bits(SNodeBitPointer bp, uint32_t value, uint32_t bits) { using P = uint32_t; constexpr int N = sizeof(P) * 8; const uint32_t mask = ((~(uint32_t)0U) << (N - bits)) >> (N - bp.offset - bits); device auto *atm_ptr = reinterpret_cast<device atomic_uint *>(bp.base); bool ok = false; while (!ok) { P old_val = *(bp.base); P new_val = (old_val & (~mask)) | (value << bp.offset); ok = atomic_compare_exchange_weak_explicit(atm_ptr, &old_val, new_val, metal::memory_order_relaxed, metal::memory_order_relaxed); } } void mtl_set_full_bits(SNodeBitPointer bp, uint32_t value) { device auto *atm_ptr = reinterpret_cast<device atomic_uint *>(bp.base); atomic_store_explicit(atm_ptr, value, metal::memory_order_relaxed); } uint32_t mtl_atomic_add_partial_bits(SNodeBitPointer bp, uint32_t value, uint32_t bits) { using P = uint32_t; constexpr int N = sizeof(P) * 8; const uint32_t mask = ((~(uint32_t)0U) << (N - bits)) >> (N - bp.offset - bits); device auto *atm_ptr = reinterpret_cast<device atomic_uint *>(bp.base); P old_val = 0; bool ok = false; while (!ok) { old_val = *(bp.base); P new_val = old_val + (value << bp.offset); new_val = (old_val & (~mask)) | (new_val & mask); ok = atomic_compare_exchange_weak_explicit(atm_ptr, &old_val, new_val, metal::memory_order_relaxed, metal::memory_order_relaxed); } return old_val; } uint32_t mtl_atomic_add_full_bits(SNodeBitPointer bp, uint32_t value) { device auto *atm_ptr = reinterpret_cast<device atomic_uint *>(bp.base); return atomic_fetch_add_explicit(atm_ptr, value, metal::memory_order_relaxed); } namespace detail { template <bool Signed> struct SHRSelector { using type = int32_t; }; template <> struct SHRSelector<false> { using type = uint32_t; }; } template <typename C> C mtl_get_partial_bits(SNodeBitPointer bp, uint32_t bits) { using P = uint32_t; constexpr int N = sizeof(P) * 8; const P phy_val = *(bp.base); using CSel = typename detail::SHRSelector<is_signed<C>::value>::type; const auto step1 = static_cast<CSel>(phy_val << (N - (bp.offset + bits))); return static_cast<C>(step1 >> (N - bits)); } template <typename C> C mtl_get_full_bits(SNodeBitPointer bp) { return static_cast<C>(*(bp.base)); }
+
+
+
+
+struct S43 {
+  // place
+  constant static constexpr int stride = sizeof(int32_t);
+
+  S43(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device int32_t*)v) {}
+
+  device int32_t *val;
+};
+
+
+struct S42 {
+  // place
+  constant static constexpr int stride = sizeof(int32_t);
+
+  S42(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device int32_t*)v) {}
+
+  device int32_t *val;
+};
+
+
+struct S41 {
+  // place
+  constant static constexpr int stride = sizeof(int32_t);
+
+  S41(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device int32_t*)v) {}
+
+  device int32_t *val;
+};
+
+
+struct S40 {
+  // place
+  constant static constexpr int stride = sizeof(int32_t);
+
+  S40(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device int32_t*)v) {}
+
+  device int32_t *val;
+};
+
+
+struct S39 {
+  // place
+  constant static constexpr int stride = sizeof(float);
+
+  S39(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device float*)v) {}
+
+  device float *val;
+};
+
+
+struct S38 {
+  // place
+  constant static constexpr int stride = sizeof(float);
+
+  S38(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device float*)v) {}
+
+  device float *val;
+};
+
+
+struct S37 {
+  // place
+  constant static constexpr int stride = sizeof(float);
+
+  S37(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device float*)v) {}
+
+  device float *val;
+};
+
+
+struct S36 {
+  // place
+  constant static constexpr int stride = sizeof(float);
+
+  S36(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device float*)v) {}
+
+  device float *val;
+};
+
+
+struct S35 {
+  // place
+  constant static constexpr int stride = sizeof(float);
+
+  S35(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device float*)v) {}
+
+  device float *val;
+};
+
+
+struct S34 {
+  // place
+  constant static constexpr int stride = sizeof(float);
+
+  S34(device byte *v, device Runtime *, device MemoryAllocator *)
+    : val((device float*)v) {}
+
+  device float *val;
+};
+
+class S33_ch {
+ public:
+  S33_ch(device byte *a) : addr_(a) {}
+  S34 get0(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0), rtm, ma};
+  }
+
+  S35 get1(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S34::stride), rtm, ma};
+  }
+
+  S36 get2(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S34::stride + S35::stride), rtm, ma};
+  }
+
+  S37 get3(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S34::stride + S35::stride + S36::stride), rtm, ma};
+  }
+
+  S38 get4(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S34::stride + S35::stride + S36::stride + S37::stride), rtm, ma};
+  }
+
+  S39 get5(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S34::stride + S35::stride + S36::stride + S37::stride + S38::stride), rtm, ma};
+  }
+
+  S40 get6(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S34::stride + S35::stride + S36::stride + S37::stride + S38::stride + S39::stride), rtm, ma};
+  }
+
+  S41 get7(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S34::stride + S35::stride + S36::stride + S37::stride + S38::stride + S39::stride + S40::stride), rtm, ma};
+  }
+
+  S42 get8(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S34::stride + S35::stride + S36::stride + S37::stride + S38::stride + S39::stride + S40::stride + S41::stride), rtm, ma};
+  }
+
+  S43 get9(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0 + S34::stride + S35::stride + S36::stride + S37::stride + S38::stride + S39::stride + S40::stride + S41::stride + S42::stride), rtm, ma};
+  }
+
+  device byte *addr() { return addr_; }
+
+  constant static constexpr int stride = 0 + S34::stride + S35::stride + S36::stride + S37::stride + S38::stride + S39::stride + S40::stride + S41::stride + S42::stride + S43::stride;
+ private:
+  device byte *addr_;
+};
+
+struct S33 {
+  // dense
+  constant static constexpr int n = 1;
+  constant static constexpr int elem_stride = S33_ch::stride;
+  constant static constexpr int stride = elem_stride * n;
+
+  S33(device byte *addr, device Runtime *rtm, device MemoryAllocator *ma) {
+    rep_.init(addr);
+  }
+
+  S33_ch children(int i) {
+    return {rep_.addr() + (i * elem_stride)};
+  }
+
+  inline bool is_active(int i) {
+    return rep_.is_active(i);
+  }
+
+  inline void activate(int i) {
+    rep_.activate(i);
+  }
+
+  inline void deactivate(int i) {
+    rep_.deactivate(i);
+  }
+
+ private:
+  SNodeRep_dense rep_;
+};
+
+class S32_ch {
+ public:
+  S32_ch(device byte *a) : addr_(a) {}
+  S33 get0(device Runtime *rtm, device MemoryAllocator *ma) {
+    return {addr_ + (0), rtm, ma};
+  }
+
+  device byte *addr() { return addr_; }
+
+  constant static constexpr int stride = 0 + S33::stride;
+ private:
+  device byte *addr_;
+};
+
+struct S32 {
+  // root
+  constant static constexpr int n = 1;
+  constant static constexpr int elem_stride = S32_ch::stride;
+  constant static constexpr int stride = elem_stride * n;
+
+  S32(device byte *addr) {
+    rep_.init(addr);
+  }
+
+  S32_ch children(int i) {
+    return {rep_.addr() + (i * elem_stride)};
+  }
+
+  inline bool is_active(int i) {
+    return rep_.is_active(i);
+  }
+
+  inline void activate(int i) {
+    rep_.activate(i);
+  }
+
+  inline void deactivate(int i) {
+    rep_.deactivate(i);
+  }
+
+ private:
+  SNodeRep_root rep_;
+};
+
+
+
+using AdStackPtr = thread byte *; inline thread uint32_t * mtl_ad_stack_n(AdStackPtr stack) { return reinterpret_cast<thread uint32_t *>(stack); } inline AdStackPtr mtl_ad_stack_data(AdStackPtr stack) { return stack + sizeof(uint32_t); } inline void mtl_ad_stack_init(AdStackPtr stack) { *mtl_ad_stack_n(stack) = 0; } inline AdStackPtr mtl_ad_stack_top_primal(AdStackPtr stack, int element_size) { const auto n = *mtl_ad_stack_n(stack); return mtl_ad_stack_data(stack) + (n - 1) * 2 * element_size; } inline AdStackPtr mtl_ad_stack_top_adjoint(AdStackPtr stack, int element_size) { return mtl_ad_stack_top_primal(stack, element_size) + element_size; } inline void mtl_ad_stack_pop(AdStackPtr stack) { thread auto &n = *mtl_ad_stack_n(stack); --n; } void mtl_ad_stack_push(AdStackPtr stack, int element_size) { thread auto &n = *mtl_ad_stack_n(stack); ++n; AdStackPtr data = mtl_ad_stack_top_primal(stack, element_size); for (int i = 0; i < element_size * 2; ++i) { data[i] = 0; } }
+
+constant constexpr int kMetalNumBitsPerPrintMsgType = 4; constant constexpr int kMetalNumPrintMsgTypePerI32 = sizeof(int32_t) * 8 / kMetalNumBitsPerPrintMsgType; constant constexpr int kMetalPrintMsgTypeWidthMask = ((1 << kMetalNumBitsPerPrintMsgType) - 1); [[maybe_unused]] constexpr inline int mtl_compute_num_print_msg_typemasks( int num_entries) { return (num_entries + kMetalNumPrintMsgTypePerI32 - 1) / kMetalNumPrintMsgTypePerI32; } [[maybe_unused]] constexpr inline int mtl_compute_print_msg_bytes( int num_entries) { const int sz = sizeof(int32_t) * (1 + mtl_compute_num_print_msg_typemasks(num_entries) + num_entries); return sz; } class PrintMsg { public: enum Type { I32 = 1, U32 = 2, F32 = 3, Str = 4 }; PrintMsg(device int32_t *buf, int num_entries) : mask_buf_(buf), data_buf_(buf + mtl_compute_num_print_msg_typemasks(num_entries)) { } void pm_set_i32(int i, int x) { set_entry(i, x, Type::I32); } void pm_set_u32(int i, uint x) { const int32_t ix = static_cast<int32_t>(x); set_entry(i, ix, Type::U32); } void pm_set_f32(int i, float x) { const int32_t ix = *reinterpret_cast<thread int32_t *>(&x); set_entry(i, ix, Type::F32); } void pm_set_str(int i, int str_id) { set_entry(i, str_id, Type::Str); } Type pm_get_type(int i) { const int mask_i = i / kMetalNumPrintMsgTypePerI32; const int i_in_mask = i % kMetalNumPrintMsgTypePerI32; int mask = mask_buf_[mask_i]; mask >>= typemask_shift(i_in_mask); mask &= kMetalPrintMsgTypeWidthMask; return (Type)mask; } int32_t pm_get_data(int i) { return data_buf_[i]; } private: void set_entry(int i, int32_t x, Type ty) { const int mask_i = i / kMetalNumPrintMsgTypePerI32; const int i_in_mask = i % kMetalNumPrintMsgTypePerI32; int mask = ((int)ty & kMetalPrintMsgTypeWidthMask); mask <<= typemask_shift(i_in_mask); mask_buf_[mask_i] |= mask; data_buf_[i] = x; } inline static int typemask_shift(int i_in_mask) { return (kMetalNumPrintMsgTypePerI32 - 1 - i_in_mask) * kMetalNumBitsPerPrintMsgType; } device int32_t *mask_buf_; device int32_t *data_buf_; }; struct AssertRecorderData { atomic_int flag; int32_t num_args; }; class AssertRecorder { public: explicit AssertRecorder(device byte * addr) : ac_(reinterpret_cast<device AssertRecorderData *>(addr)) { } bool mark_first_failure() { return atomic_exchange_explicit(&(ac_->flag), 1, metal::memory_order_relaxed) == 0; } void set_num_args(int n) { ac_->num_args = n; } device int32_t *msg_buf_addr() { return reinterpret_cast<device int32_t *>(ac_ + 1); } private: device AssertRecorderData *ac_; }; constant constexpr int kMetalMaxNumAssertArgs = 64; constant constexpr int kMetalAssertBufferSize = sizeof(AssertRecorderData) + mtl_compute_print_msg_bytes(kMetalMaxNumAssertArgs); struct PrintMsgAllocator { atomic_int next; }; constant constexpr int kMetalPrintAssertBufferSize = 2 * 1024 * 1024; constant constexpr int kMetalPrintMsgsMaxQueueSize = kMetalPrintAssertBufferSize - sizeof(PrintMsgAllocator) - kMetalAssertBufferSize; [[maybe_unused]] device int32_t * mtl_print_alloc_buf(device PrintMsgAllocator *pa, int num_entries) { const int sz = mtl_compute_print_msg_bytes(num_entries); const int cur = atomic_fetch_add_explicit(&(pa->next), sz, metal::memory_order_relaxed); if (cur + sz >= kMetalPrintMsgsMaxQueueSize) { return (device int32_t *)0; } device byte *data_begin = reinterpret_cast<device byte *>(pa + 1); device int32_t *ptr = reinterpret_cast<device int32_t *>(data_begin + cur); *ptr = num_entries; return (ptr + 1); }
+
+void mtl_k0041_render_pass_c4_0_0_func(
+    device byte* root_addr,
+    device byte* global_tmps_addr,
+    device byte* runtime_addr,
+    device byte* print_assert_addr,
+    const int linear_loop_idx_) {
+  device auto *runtime_ = reinterpret_cast<device Runtime *>(runtime_addr);
+  device auto *mem_alloc_ = reinterpret_cast<device MemoryAllocator *>(runtime_ + 1);
+  device RandState* rand_state_ = reinterpret_cast<device RandState*>(runtime_->rand_seeds + (linear_loop_idx_ % 65536));
+  AssertRecorder assert_rec_(print_assert_addr);
+  device auto* print_alloc_ = reinterpret_cast<device PrintMsgAllocator*>(print_assert_addr + 300);
+  constexpr int32_t tmp7680 = 255;
+  constexpr int32_t tmp7676 = 511;
+  constexpr int32_t tmp7632 = 127;
+  constexpr float tmp96 = -0.0005248151;
+  constexpr float tmp94 = 3.8894572;
+  constexpr float tmp92 = -0.015310406;
+  constexpr float tmp89 = -3.226284;
+  constexpr float tmp87 = 0.0155695155;
+  constexpr float tmp82 = -0.002274199;
+  constexpr float tmp80 = 2.9136016;
+  constexpr float tmp78 = 0.0035331706;
+  constexpr float tmp76 = 3.0;
+  constexpr float tmp74 = 2.0;
+  constexpr float tmp72 = 13.0;
+  constexpr float tmp68 = -0.0016667696;
+  constexpr float tmp66 = -0.048719563;
+  constexpr float tmp64 = 0.0494475;
+  constexpr float tmp61 = -0.0072226683;
+  constexpr float tmp59 = 0.0112429755;
+  constexpr int32_t tmp31 = 50;
+  constexpr float tmp30 = 100000000.0;
+  constexpr int32_t tmp29 = -1;
+  constexpr float tmp28 = 0.0001;
+  constexpr float tmp27 = 6.2831855;
+  constexpr int32_t tmp26 = 1;
+  constexpr float tmp25 = 0.0;
+  constexpr float tmp24 = 0.5;
+  constexpr float tmp23 = 1.0;
+  constexpr float tmp22 = 0.25;
+  constexpr float tmp21 = 0.35;
+  constexpr int32_t tmp20 = 0;
+  const int tmp3 = linear_loop_idx_;
+  constexpr int32_t tmp7494 = 8;
+  const int32_t tmp7495 = (tmp3 >> tmp7494);
+  const int32_t tmp7497 = (tmp7495 & tmp7676);
+  const int32_t tmp7501 = (tmp3 & tmp7680);
+  constexpr int32_t tmp13 = 400;
+  const int32_t tmp14 = -(tmp7497 < tmp13);
+  constexpr int32_t tmp16 = 225;
+  const int32_t tmp17 = -(tmp7501 < tmp16);
+  const int32_t tmp18 = (tmp14 & tmp17);
+  if (tmp18) {
+    const auto tmp32 = metal_rand_f32(rand_state_);
+    const auto tmp33 = metal_rand_f32(rand_state_);
+    const float tmp34 = static_cast<float>(tmp7497);
+    const float tmp35 = (tmp34 + tmp32);
+    const float tmp36 = static_cast<float>(tmp7501);
+    const float tmp37 = (tmp36 + tmp33);
+    float tmp38(0);
+    float tmp39(0);
+    while (true) {
+      const auto tmp41 = metal_rand_f32(rand_state_);
+      const auto tmp42 = metal_rand_f32(rand_state_);
+      const float tmp43 = (tmp41 + tmp41);
+      const float tmp44 = (tmp43 - tmp23);
+      const float tmp45 = (tmp42 + tmp42);
+      const float tmp46 = (tmp45 - tmp23);
+      tmp38 = tmp44;
+      tmp39 = tmp46;
+      const float tmp49 = (tmp44 * tmp44);
+      const float tmp50 = (tmp46 * tmp46);
+      const float tmp51 = (tmp49 + tmp50);
+      const float tmp52 = sqrt(tmp51);
+      const int32_t tmp53 = -(tmp52 < tmp23);
+      const int32_t tmp54 = (tmp53 & tmp26);
+      if (tmp54) {
+        if (!tmp20) break;
+      } else {
+      }
+    }
+    const float tmp57(tmp38);
+    const float tmp58(tmp39);
+    const float tmp60 = (tmp57 * tmp59);
+    const float tmp62 = (tmp58 * tmp61);
+    const float tmp63 = (tmp60 + tmp62);
+    const float tmp65 = (tmp58 * tmp64);
+    const float tmp67 = (tmp57 * tmp66);
+    const float tmp69 = (tmp58 * tmp68);
+    const float tmp70 = (tmp67 + tmp69);
+    const auto tmp71 = metal_rand_f32(rand_state_);
+    const float tmp73 = (tmp63 + tmp72);
+    const float tmp75 = (tmp65 + tmp74);
+    const float tmp77 = (tmp70 + tmp76);
+    const float tmp79 = (tmp35 * tmp78);
+    const float tmp81 = (tmp79 + tmp80);
+    const float tmp83 = (tmp37 * tmp82);
+    const float tmp84 = (tmp81 + tmp83);
+    const float tmp85 = (tmp84 - tmp72);
+    const float tmp86 = (tmp85 - tmp63);
+    const float tmp88 = (tmp37 * tmp87);
+    const float tmp90 = (tmp88 + tmp89);
+    const float tmp91 = (tmp90 - tmp65);
+    const float tmp93 = (tmp35 * tmp92);
+    const float tmp95 = (tmp93 + tmp94);
+    const float tmp97 = (tmp37 * tmp96);
+    const float tmp98 = (tmp95 + tmp97);
+    const float tmp99 = (tmp98 - tmp76);
+    const float tmp100 = (tmp99 - tmp70);
+    float tmp101(0);
+    tmp101 = tmp73;
+    float tmp103(0);
+    tmp103 = tmp75;
+    float tmp105(0);
+    tmp105 = tmp77;
+    float tmp107(0);
+    tmp107 = tmp86;
+    float tmp109(0);
+    tmp109 = tmp91;
+    float tmp111(0);
+    tmp111 = tmp100;
+    float tmp113(0);
+    tmp113 = tmp71;
+    float tmp115(0);
+    tmp115 = tmp23;
+    float tmp117(0);
+    tmp117 = tmp23;
+    float tmp119(0);
+    tmp119 = tmp23;
+    int32_t tmp121(0);
+    tmp121 = tmp26;
+    while (true) {
+      const int32_t tmp124(tmp121);
+      const int32_t tmp125 = -(tmp124 < tmp31);
+      const int32_t tmp126 = (tmp125 & tmp26);
+      if (tmp126) {
+      } else {
+        if (!tmp20) break;
+      }
+      const float tmp129(tmp101);
+      const float tmp130(tmp103);
+      const float tmp131(tmp105);
+      const float tmp132(tmp107);
+      const float tmp133(tmp109);
+      const float tmp134(tmp111);
+      const float tmp135(tmp113);
+      int32_t tmp136(0);
+      float tmp137(0);
+      tmp137 = tmp30;
+      float tmp139(0);
+      float tmp140(0);
+      float tmp141(0);
+      float tmp142(0);
+      float tmp143(0);
+      float tmp144(0);
+      int32_t tmp145(0);
+      tmp145 = tmp26;
+      float tmp147(0);
+      float tmp148(0);
+      float tmp149(0);
+      float tmp150(0);
+      float tmp151(0);
+      int32_t tmp152(0);
+      const int32_t tmp153 = -(tmp132 == tmp25);
+      const int32_t tmp154 = -(tmp133 == tmp25);
+      const int32_t tmp155 = -(tmp134 == tmp25);
+      const int32_t tmp156 = (tmp153 & tmp26);
+      const int32_t tmp157 = (tmp154 & tmp26);
+      const int32_t tmp158 = (tmp155 & tmp26);
+      while (true) {
+        S32 tmp7093(root_addr);
+        S32_ch tmp7095 = tmp7093.children(tmp20);
+        S33 tmp7096 = tmp7095.get0(runtime_, mem_alloc_);
+        S33_ch tmp7099 = tmp7096.children(tmp20);
+        device float* tmp7100 = tmp7099.get0(runtime_, mem_alloc_).val;
+        const auto tmp161 = *tmp7100;
+        device float* tmp7110 = tmp7099.get1(runtime_, mem_alloc_).val;
+        const auto tmp163 = *tmp7110;
+        device float* tmp7120 = tmp7099.get2(runtime_, mem_alloc_).val;
+        const auto tmp165 = *tmp7120;
+        device float* tmp7130 = tmp7099.get3(runtime_, mem_alloc_).val;
+        const auto tmp167 = *tmp7130;
+        device float* tmp7140 = tmp7099.get4(runtime_, mem_alloc_).val;
+        const auto tmp169 = *tmp7140;
+        device float* tmp7150 = tmp7099.get5(runtime_, mem_alloc_).val;
+        const auto tmp171 = *tmp7150;
+        device int32_t* tmp7160 = tmp7099.get6(runtime_, mem_alloc_).val;
+        const auto tmp173 = *tmp7160;
+        device int32_t* tmp7170 = tmp7099.get7(runtime_, mem_alloc_).val;
+        const auto tmp175 = *tmp7170;
+        float tmp176(0);
+        tmp176 = tmp28;
+        float tmp178(0);
+        const float tmp179(tmp137);
+        tmp178 = tmp179;
+        int32_t tmp181(0);
+        tmp181 = tmp26;
+        if (tmp156) {
+          const int32_t tmp184 = -(tmp129 < tmp161);
+          const int32_t tmp185 = (tmp184 & tmp26);
+          const int32_t tmp186 = -(tmp129 > tmp167);
+          const int32_t tmp187 = (tmp186 & tmp26);
+          const int32_t tmp188 = (tmp185 | tmp187);
+          if (tmp188) {
+            tmp181 = tmp20;
+          } else {
+          }
+        } else {
+          const float tmp191 = (tmp161 - tmp129);
+          const float tmp192 = (tmp191 / tmp132);
+          const float tmp193 = (tmp167 - tmp129);
+          const float tmp194 = (tmp193 / tmp132);
+          const float tmp195 =  max(tmp192, tmp194);
+          const float tmp196 =  min(tmp192, tmp194);
+          const float tmp197 =  min(tmp195, tmp179);
+          tmp178 = tmp197;
+          const float tmp199 =  max(tmp196, tmp28);
+          tmp176 = tmp199;
+        }
+        if (tmp157) {
+          const int32_t tmp202 = -(tmp130 < tmp163);
+          const int32_t tmp203 = (tmp202 & tmp26);
+          const int32_t tmp204 = -(tmp130 > tmp169);
+          const int32_t tmp205 = (tmp204 & tmp26);
+          const int32_t tmp206 = (tmp203 | tmp205);
+          if (tmp206) {
+            tmp181 = tmp20;
+          } else {
+          }
+        } else {
+          const float tmp209 = (tmp163 - tmp130);
+          const float tmp210 = (tmp209 / tmp133);
+          const float tmp211 = (tmp169 - tmp130);
+          const float tmp212 = (tmp211 / tmp133);
+          const float tmp213 =  max(tmp210, tmp212);
+          const float tmp214 =  min(tmp210, tmp212);
+          const float tmp215(tmp178);
+          const float tmp216 =  min(tmp213, tmp215);
+          tmp178 = tmp216;
+          const float tmp218(tmp176);
+          const float tmp219 =  max(tmp214, tmp218);
+          tmp176 = tmp219;
+        }
+        if (tmp158) {
+          const int32_t tmp222 = -(tmp131 < tmp165);
+          const int32_t tmp223 = (tmp222 & tmp26);
+          const int32_t tmp224 = -(tmp131 > tmp171);
+          const int32_t tmp225 = (tmp224 & tmp26);
+          const int32_t tmp226 = (tmp223 | tmp225);
+          if (tmp226) {
+            tmp181 = tmp20;
+          } else {
+          }
+        } else {
+          const float tmp229 = (tmp165 - tmp131);
+          const float tmp230 = (tmp229 / tmp134);
+          const float tmp231 = (tmp171 - tmp131);
+          const float tmp232 = (tmp231 / tmp134);
+          const float tmp233 =  max(tmp230, tmp232);
+          const float tmp234 =  min(tmp230, tmp232);
+          const float tmp235(tmp178);
+          const float tmp236 =  min(tmp233, tmp235);
+          tmp178 = tmp236;
+          const float tmp238(tmp176);
+          const float tmp239 =  max(tmp234, tmp238);
+          tmp176 = tmp239;
+        }
+        const float tmp241(tmp176);
+        const float tmp242(tmp178);
+        const int32_t tmp243 = -(tmp241 > tmp242);
+        const int32_t tmp244 = (tmp243 & tmp26);
+        if (tmp244) {
+          tmp181 = tmp20;
+        } else {
+        }
+        const int32_t tmp247(tmp181);
+        const int32_t tmp248 = -(tmp247 == tmp20);
+        const int32_t tmp249 = (tmp248 & tmp26);
+        if (tmp249) {
+          continue;
+        } else {
+        }
+        const int32_t tmp252 = -(tmp175 != tmp29);
+        const int32_t tmp253 = (tmp252 & tmp26);
+        if (tmp253) {
+          const float tmp255(tmp137);
+          int32_t tmp256(0);
+          float tmp257(0);
+          float tmp258(0);
+          float tmp259(0);
+          float tmp260(0);
+          float tmp261(0);
+          float tmp262(0);
+          float tmp263(0);
+          int32_t tmp264(0);
+          float tmp265(0);
+          float tmp266(0);
+          float tmp267(0);
+          float tmp268(0);
+          float tmp269(0);
+          int32_t tmp270(0);
+          const int32_t tmp271 = -(tmp173 == tmp26);
+          const int32_t tmp272 = (tmp271 & tmp26);
+          S32 tmp7173(root_addr);
+          S0_ch tmp7175 = tmp7173.children(tmp20);
+          if (tmp272) {
+            S16 tmp7176 = tmp7175.get2(runtime_, mem_alloc_);
+            const int32_t tmp7537 = (tmp175 & tmp7676);
+            S16_ch tmp7179 = tmp7176.children(tmp7537);
+            device float* tmp7180 = tmp7179.get0(runtime_, mem_alloc_).val;
+            const auto tmp275 = *tmp7180;
+            device float* tmp7190 = tmp7179.get1(runtime_, mem_alloc_).val;
+            const auto tmp277 = *tmp7190;
+            device float* tmp7200 = tmp7179.get2(runtime_, mem_alloc_).val;
+            const auto tmp279 = *tmp7200;
+            device float* tmp7210 = tmp7179.get3(runtime_, mem_alloc_).val;
+            const auto tmp281 = *tmp7210;
+            device float* tmp7220 = tmp7179.get4(runtime_, mem_alloc_).val;
+            const auto tmp283 = *tmp7220;
+            device float* tmp7230 = tmp7179.get5(runtime_, mem_alloc_).val;
+            const auto tmp285 = *tmp7230;
+            device float* tmp7240 = tmp7179.get6(runtime_, mem_alloc_).val;
+            const auto tmp287 = *tmp7240;
+            device float* tmp7250 = tmp7179.get13(runtime_, mem_alloc_).val;
+            const auto tmp295 = *tmp7250;
+            device float* tmp7260 = tmp7179.get14(runtime_, mem_alloc_).val;
+            const auto tmp297 = *tmp7260;
+            int32_t tmp298(0);
+            float tmp299(0);
+            float tmp300(0);
+            float tmp301(0);
+            float tmp302(0);
+            float tmp303(0);
+            float tmp304(0);
+            float tmp305(0);
+            int32_t tmp306(0);
+            tmp306 = tmp26;
+            const float tmp308 = (tmp135 - tmp295);
+            const float tmp309 = (tmp297 - tmp295);
+            const float tmp310 = (tmp308 / tmp309);
+            const float tmp311 = (tmp281 - tmp275);
+            const float tmp312 = (tmp310 * tmp311);
+            const float tmp313 = (tmp275 + tmp312);
+            const float tmp314 = (tmp283 - tmp277);
+            const float tmp315 = (tmp310 * tmp314);
+            const float tmp316 = (tmp277 + tmp315);
+            const float tmp317 = (tmp285 - tmp279);
+            const float tmp318 = (tmp310 * tmp317);
+            const float tmp319 = (tmp279 + tmp318);
+            const float tmp320 = (tmp129 - tmp313);
+            const float tmp321 = (tmp130 - tmp316);
+            const float tmp322 = (tmp131 - tmp319);
+            const float tmp323 = (tmp132 * tmp132);
+            const float tmp324 = (tmp133 * tmp133);
+            const float tmp325 = (tmp323 + tmp324);
+            const float tmp326 = (tmp134 * tmp134);
+            const float tmp327 = (tmp325 + tmp326);
+            const float tmp328 = (tmp320 * tmp132);
+            const float tmp329 = (tmp321 * tmp133);
+            const float tmp330 = (tmp328 + tmp329);
+            const float tmp331 = (tmp322 * tmp134);
+            const float tmp332 = (tmp330 + tmp331);
+            const float tmp333 = (tmp320 * tmp320);
+            const float tmp334 = (tmp321 * tmp321);
+            const float tmp335 = (tmp333 + tmp334);
+            const float tmp336 = (tmp322 * tmp322);
+            const float tmp337 = (tmp335 + tmp336);
+            const float tmp338 = (tmp287 * tmp287);
+            const float tmp339 = (tmp337 - tmp338);
+            const float tmp340 = (tmp332 * tmp332);
+            const float tmp341 = (tmp327 * tmp339);
+            const float tmp342 = (tmp340 - tmp341);
+            const int32_t tmp343 = -(tmp342 >= tmp25);
+            const int32_t tmp344 = (tmp343 & tmp26);
+            if (tmp344) {
+              const float tmp346 = sqrt(tmp342);
+              float tmp347(0);
+              const float tmp348 = -(tmp332);
+              const float tmp349 = (tmp348 - tmp346);
+              const float tmp350 = (tmp349 / tmp327);
+              tmp347 = tmp350;
+              const int32_t tmp352 = -(tmp350 >= tmp28);
+              const int32_t tmp353 = (tmp352 & tmp26);
+              const int32_t tmp354 = -(tmp350 < tmp255);
+              const int32_t tmp355 = (tmp354 & tmp26);
+              const int32_t tmp356 = (tmp353 & tmp355);
+              tmp298 = tmp356;
+              const int32_t tmp358 = !(tmp356);
+              if (tmp358) {
+                const float tmp360 = (tmp348 + tmp346);
+                const float tmp361 = (tmp360 / tmp327);
+                tmp347 = tmp361;
+                const int32_t tmp363 = -(tmp361 >= tmp28);
+                const int32_t tmp364 = (tmp363 & tmp26);
+                const int32_t tmp365 = -(tmp361 < tmp255);
+                const int32_t tmp366 = (tmp365 & tmp26);
+                const int32_t tmp367 = (tmp364 & tmp366);
+                tmp298 = tmp367;
+              } else {
+              }
+              const int32_t tmp369(tmp298);
+              if (tmp369) {
+                const float tmp371(tmp347);
+                tmp305 = tmp371;
+                const float tmp373 = (tmp132 * tmp371);
+                const float tmp374 = (tmp129 + tmp373);
+                const float tmp375 = (tmp133 * tmp371);
+                const float tmp376 = (tmp130 + tmp375);
+                const float tmp377 = (tmp134 * tmp371);
+                const float tmp378 = (tmp131 + tmp377);
+                tmp299 = tmp374;
+                tmp300 = tmp376;
+                tmp301 = tmp378;
+                const float tmp382 = (tmp374 - tmp313);
+                const float tmp383 = (tmp382 / tmp287);
+                const float tmp384 = (tmp376 - tmp316);
+                const float tmp385 = (tmp384 / tmp287);
+                const float tmp386 = (tmp378 - tmp319);
+                const float tmp387 = (tmp386 / tmp287);
+                const float tmp388 = (tmp132 * tmp383);
+                const float tmp389 = (tmp133 * tmp385);
+                const float tmp390 = (tmp388 + tmp389);
+                const float tmp391 = (tmp134 * tmp387);
+                const float tmp392 = (tmp390 + tmp391);
+                const int32_t tmp393 = -(tmp392 < tmp25);
+                const int32_t tmp394 = (tmp393 & tmp26);
+                tmp306 = tmp394;
+                const int32_t tmp396 = -(tmp394 == tmp26);
+                const int32_t tmp397 = (tmp396 & tmp26);
+                const int32_t tmp398 = !(tmp397);
+                const int32_t tmp399 = !(tmp398);
+                const float tmp400 = -(tmp383);
+                const float tmp401 = (tmp399) ? (tmp383) : (tmp400);
+                const float tmp402 = -(tmp385);
+                const float tmp403 = (tmp399) ? (tmp385) : (tmp402);
+                const float tmp404 = -(tmp387);
+                const float tmp405 = (tmp399) ? (tmp387) : (tmp404);
+                tmp302 = tmp401;
+                tmp303 = tmp403;
+                tmp304 = tmp405;
+              } else {
+              }
+            } else {
+            }
+            const int32_t tmp409(tmp298);
+            const float tmp410(tmp299);
+            const float tmp411(tmp300);
+            const float tmp412(tmp301);
+            const float tmp413(tmp302);
+            const float tmp414(tmp303);
+            const float tmp415(tmp304);
+            const float tmp416(tmp305);
+            const int32_t tmp417(tmp306);
+            tmp256 = tmp409;
+            tmp257 = tmp410;
+            tmp258 = tmp411;
+            tmp259 = tmp412;
+            tmp260 = tmp413;
+            tmp261 = tmp414;
+            tmp262 = tmp415;
+            tmp263 = tmp416;
+            tmp264 = tmp417;
+            device float* tmp7270 = tmp7179.get7(runtime_, mem_alloc_).val;
+            const auto tmp427 = *tmp7270;
+            device float* tmp7280 = tmp7179.get8(runtime_, mem_alloc_).val;
+            const auto tmp428 = *tmp7280;
+            device float* tmp7290 = tmp7179.get9(runtime_, mem_alloc_).val;
+            const auto tmp429 = *tmp7290;
+            device float* tmp7300 = tmp7179.get10(runtime_, mem_alloc_).val;
+            const auto tmp430 = *tmp7300;
+            device float* tmp7310 = tmp7179.get11(runtime_, mem_alloc_).val;
+            const auto tmp431 = *tmp7310;
+            device int32_t* tmp7320 = tmp7179.get12(runtime_, mem_alloc_).val;
+            const auto tmp432 = *tmp7320;
+            tmp265 = tmp427;
+            tmp266 = tmp428;
+            tmp267 = tmp429;
+            tmp268 = tmp430;
+            tmp269 = tmp431;
+            tmp270 = tmp432;
+          } else {
+            S5 tmp7326 = tmp7175.get1(runtime_, mem_alloc_);
+            const int32_t tmp7597 = (tmp175 & tmp7632);
+            S5_ch tmp7329 = tmp7326.children(tmp7597);
+            device float* tmp7330 = tmp7329.get0(runtime_, mem_alloc_).val;
+            const auto tmp440 = *tmp7330;
+            device float* tmp7340 = tmp7329.get1(runtime_, mem_alloc_).val;
+            const auto tmp442 = *tmp7340;
+            device float* tmp7350 = tmp7329.get2(runtime_, mem_alloc_).val;
+            const auto tmp444 = *tmp7350;
+            device float* tmp7360 = tmp7329.get3(runtime_, mem_alloc_).val;
+            const auto tmp446 = *tmp7360;
+            int32_t tmp453(0);
+            float tmp454(0);
+            float tmp455(0);
+            float tmp456(0);
+            float tmp457(0);
+            float tmp458(0);
+            float tmp459(0);
+            float tmp460(0);
+            int32_t tmp461(0);
+            tmp461 = tmp26;
+            const float tmp463 = (tmp129 - tmp440);
+            const float tmp464 = (tmp130 - tmp442);
+            const float tmp465 = (tmp131 - tmp444);
+            const float tmp466 = (tmp132 * tmp132);
+            const float tmp467 = (tmp133 * tmp133);
+            const float tmp468 = (tmp466 + tmp467);
+            const float tmp469 = (tmp134 * tmp134);
+            const float tmp470 = (tmp468 + tmp469);
+            const float tmp471 = (tmp463 * tmp132);
+            const float tmp472 = (tmp464 * tmp133);
+            const float tmp473 = (tmp471 + tmp472);
+            const float tmp474 = (tmp465 * tmp134);
+            const float tmp475 = (tmp473 + tmp474);
+            const float tmp476 = (tmp463 * tmp463);
+            const float tmp477 = (tmp464 * tmp464);
+            const float tmp478 = (tmp476 + tmp477);
+            const float tmp479 = (tmp465 * tmp465);
+            const float tmp480 = (tmp478 + tmp479);
+            const float tmp481 = (tmp446 * tmp446);
+            const float tmp482 = (tmp480 - tmp481);
+            const float tmp483 = (tmp475 * tmp475);
+            const float tmp484 = (tmp470 * tmp482);
+            const float tmp485 = (tmp483 - tmp484);
+            const int32_t tmp486 = -(tmp485 >= tmp25);
+            const int32_t tmp487 = (tmp486 & tmp26);
+            if (tmp487) {
+              const float tmp489 = sqrt(tmp485);
+              float tmp490(0);
+              const float tmp491 = -(tmp475);
+              const float tmp492 = (tmp491 - tmp489);
+              const float tmp493 = (tmp492 / tmp470);
+              tmp490 = tmp493;
+              const int32_t tmp495 = -(tmp493 >= tmp28);
+              const int32_t tmp496 = (tmp495 & tmp26);
+              const int32_t tmp497 = -(tmp493 < tmp255);
+              const int32_t tmp498 = (tmp497 & tmp26);
+              const int32_t tmp499 = (tmp496 & tmp498);
+              tmp453 = tmp499;
+              const int32_t tmp501 = !(tmp499);
+              if (tmp501) {
+                const float tmp503 = (tmp491 + tmp489);
+                const float tmp504 = (tmp503 / tmp470);
+                tmp490 = tmp504;
+                const int32_t tmp506 = -(tmp504 >= tmp28);
+                const int32_t tmp507 = (tmp506 & tmp26);
+                const int32_t tmp508 = -(tmp504 < tmp255);
+                const int32_t tmp509 = (tmp508 & tmp26);
+                const int32_t tmp510 = (tmp507 & tmp509);
+                tmp453 = tmp510;
+              } else {
+              }
+              const int32_t tmp512(tmp453);
+              if (tmp512) {
+                const float tmp514(tmp490);
+                tmp460 = tmp514;
+                const float tmp516 = (tmp132 * tmp514);
+                const float tmp517 = (tmp129 + tmp516);
+                const float tmp518 = (tmp133 * tmp514);
+                const float tmp519 = (tmp130 + tmp518);
+                const float tmp520 = (tmp134 * tmp514);
+                const float tmp521 = (tmp131 + tmp520);
+                tmp454 = tmp517;
+                tmp455 = tmp519;
+                tmp456 = tmp521;
+                const float tmp525 = (tmp517 - tmp440);
+                const float tmp526 = (tmp525 / tmp446);
+                const float tmp527 = (tmp519 - tmp442);
+                const float tmp528 = (tmp527 / tmp446);
+                const float tmp529 = (tmp521 - tmp444);
+                const float tmp530 = (tmp529 / tmp446);
+                const float tmp531 = (tmp132 * tmp526);
+                const float tmp532 = (tmp133 * tmp528);
+                const float tmp533 = (tmp531 + tmp532);
+                const float tmp534 = (tmp134 * tmp530);
+                const float tmp535 = (tmp533 + tmp534);
+                const int32_t tmp536 = -(tmp535 < tmp25);
+                const int32_t tmp537 = (tmp536 & tmp26);
+                tmp461 = tmp537;
+                const int32_t tmp539 = -(tmp537 == tmp26);
+                const int32_t tmp540 = (tmp539 & tmp26);
+                const int32_t tmp541 = !(tmp540);
+                const int32_t tmp542 = !(tmp541);
+                const float tmp543 = -(tmp526);
+                const float tmp544 = (tmp542) ? (tmp526) : (tmp543);
+                const float tmp545 = -(tmp528);
+                const float tmp546 = (tmp542) ? (tmp528) : (tmp545);
+                const float tmp547 = -(tmp530);
+                const float tmp548 = (tmp542) ? (tmp530) : (tmp547);
+                tmp457 = tmp544;
+                tmp458 = tmp546;
+                tmp459 = tmp548;
+              } else {
+              }
+            } else {
+            }
+            const int32_t tmp552(tmp453);
+            const float tmp553(tmp454);
+            const float tmp554(tmp455);
+            const float tmp555(tmp456);
+            const float tmp556(tmp457);
+            const float tmp557(tmp458);
+            const float tmp558(tmp459);
+            const float tmp559(tmp460);
+            const int32_t tmp560(tmp461);
+            tmp256 = tmp552;
+            tmp257 = tmp553;
+            tmp258 = tmp554;
+            tmp259 = tmp555;
+            tmp260 = tmp556;
+            tmp261 = tmp557;
+            tmp262 = tmp558;
+            tmp263 = tmp559;
+            tmp264 = tmp560;
+            device float* tmp7370 = tmp7329.get4(runtime_, mem_alloc_).val;
+            const auto tmp570 = *tmp7370;
+            device float* tmp7380 = tmp7329.get5(runtime_, mem_alloc_).val;
+            const auto tmp571 = *tmp7380;
+            device float* tmp7390 = tmp7329.get6(runtime_, mem_alloc_).val;
+            const auto tmp572 = *tmp7390;
+            device float* tmp7400 = tmp7329.get7(runtime_, mem_alloc_).val;
+            const auto tmp573 = *tmp7400;
+            device float* tmp7410 = tmp7329.get8(runtime_, mem_alloc_).val;
+            const auto tmp574 = *tmp7410;
+            device int32_t* tmp7420 = tmp7329.get9(runtime_, mem_alloc_).val;
+            const auto tmp575 = *tmp7420;
+            tmp265 = tmp570;
+            tmp266 = tmp571;
+            tmp267 = tmp572;
+            tmp268 = tmp573;
+            tmp269 = tmp574;
+            tmp270 = tmp575;
+          }
+          const int32_t tmp582(tmp256);
+          const float tmp583(tmp257);
+          const float tmp584(tmp258);
+          const float tmp585(tmp259);
+          const float tmp586(tmp260);
+          const float tmp587(tmp261);
+          const float tmp588(tmp262);
+          const float tmp589(tmp263);
+          const int32_t tmp590(tmp264);
+          const float tmp591(tmp265);
+          const float tmp592(tmp266);
+          const float tmp593(tmp267);
+          const float tmp594(tmp268);
+          const float tmp595(tmp269);
+          const int32_t tmp596(tmp270);
+          if (tmp582) {
+            tmp136 = tmp26;
+            tmp137 = tmp589;
+            tmp139 = tmp583;
+            tmp140 = tmp584;
+            tmp141 = tmp585;
+            tmp142 = tmp586;
+            tmp143 = tmp587;
+            tmp144 = tmp588;
+            tmp145 = tmp590;
+            tmp147 = tmp591;
+            tmp148 = tmp592;
+            tmp149 = tmp593;
+            tmp150 = tmp594;
+            tmp151 = tmp595;
+            tmp152 = tmp596;
+          } else {
+          }
+        } else {
+        }
+      }
+      const int32_t tmp613(tmp136);
+      const float tmp614(tmp139);
+      const float tmp615(tmp140);
+      const float tmp616(tmp141);
+      const float tmp617(tmp142);
+      const float tmp618(tmp143);
+      const float tmp619(tmp144);
+      const int32_t tmp620(tmp145);
+      const float tmp621(tmp147);
+      const float tmp622(tmp148);
+      const float tmp623(tmp149);
+      const float tmp624(tmp150);
+      const float tmp625(tmp151);
+      const int32_t tmp626(tmp152);
+      const float tmp627(tmp107);
+      if (tmp613) {
+        const float tmp629(tmp109);
+        const float tmp630(tmp111);
+        const float tmp631(tmp113);
+        int32_t tmp632(0);
+        float tmp633(0);
+        float tmp634(0);
+        float tmp635(0);
+        const int32_t tmp636 = -(tmp626 == tmp20);
+        const int32_t tmp637 = (tmp636 & tmp26);
+        if (tmp637) {
+          const auto tmp639 = metal_rand_f32(rand_state_);
+          const float tmp640 = (tmp639 * tmp27);
+          const float tmp641 = cos(tmp640);
+          const float tmp642 = sin(tmp640);
+          const auto tmp643 = metal_rand_f32(rand_state_);
+          const float tmp644 = (tmp643 + tmp643);
+          const float tmp645 = (tmp644 - tmp23);
+          const float tmp646 = (tmp645 * tmp645);
+          const float tmp647 = (tmp23 - tmp646);
+          const float tmp648 = sqrt(tmp647);
+          const float tmp649 = (tmp648 * tmp641);
+          const float tmp650 = (tmp617 + tmp649);
+          const float tmp651 = (tmp648 * tmp642);
+          const float tmp652 = (tmp618 + tmp651);
+          const float tmp653 = (tmp619 + tmp645);
+          tmp632 = tmp26;
+          tmp633 = tmp650;
+          tmp634 = tmp652;
+          tmp635 = tmp653;
+        } else {
+          const int32_t tmp658 = -(tmp626 == tmp26);
+          const int32_t tmp659 = (tmp658 & tmp26);
+          if (tmp659) {
+            const float tmp661 = (tmp627 * tmp627);
+            const float tmp662 = (tmp629 * tmp629);
+            const float tmp663 = (tmp661 + tmp662);
+            const float tmp664 = (tmp630 * tmp630);
+            const float tmp665 = (tmp663 + tmp664);
+            const float tmp666 = sqrt(tmp665);
+            const float tmp667 = (tmp23 / tmp666);
+            const float tmp668 = (tmp667 * tmp627);
+            const float tmp669 = (tmp667 * tmp629);
+            const float tmp670 = (tmp667 * tmp630);
+            const auto tmp671 = metal_rand_f32(rand_state_);
+            const float tmp672 = (tmp671 * tmp27);
+            const float tmp673 = cos(tmp672);
+            const float tmp674 = sin(tmp672);
+            const auto tmp675 = metal_rand_f32(rand_state_);
+            const float tmp676 = (tmp675 + tmp675);
+            const float tmp677 = (tmp676 - tmp23);
+            const float tmp678 = (tmp677 * tmp677);
+            const float tmp679 = (tmp23 - tmp678);
+            const float tmp680 = sqrt(tmp679);
+            const float tmp681 = (tmp668 * tmp617);
+            const float tmp682 = (tmp669 * tmp618);
+            const float tmp683 = (tmp681 + tmp682);
+            const float tmp684 = (tmp670 * tmp619);
+            const float tmp685 = (tmp683 + tmp684);
+            const float tmp686 = (tmp685 + tmp685);
+            const float tmp687 = (tmp686 * tmp617);
+            const float tmp688 = (tmp668 - tmp687);
+            const float tmp689 = (tmp680 * tmp673);
+            const float tmp690 = (tmp624 * tmp689);
+            const float tmp691 = (tmp688 + tmp690);
+            const float tmp692 = (tmp686 * tmp618);
+            const float tmp693 = (tmp669 - tmp692);
+            const float tmp694 = (tmp680 * tmp674);
+            const float tmp695 = (tmp624 * tmp694);
+            const float tmp696 = (tmp693 + tmp695);
+            const float tmp697 = (tmp686 * tmp619);
+            const float tmp698 = (tmp670 - tmp697);
+            const float tmp699 = (tmp624 * tmp677);
+            const float tmp700 = (tmp698 + tmp699);
+            const float tmp701 = (tmp691 * tmp617);
+            const float tmp702 = (tmp696 * tmp618);
+            const float tmp703 = (tmp701 + tmp702);
+            const float tmp704 = (tmp700 * tmp619);
+            const float tmp705 = (tmp703 + tmp704);
+            const int32_t tmp706 = -(tmp705 > tmp25);
+            const int32_t tmp707 = (tmp706 & tmp26);
+            tmp632 = tmp707;
+            tmp633 = tmp691;
+            tmp634 = tmp696;
+            tmp635 = tmp700;
+          } else {
+            const int32_t tmp712 = !(tmp620);
+            const int32_t tmp713 = !(tmp712);
+            const float tmp714 = (tmp23 / tmp625);
+            const float tmp715 = (tmp713) ? (tmp714) : (tmp625);
+            const float tmp716 = (tmp627 * tmp627);
+            const float tmp717 = (tmp629 * tmp629);
+            const float tmp718 = (tmp716 + tmp717);
+            const float tmp719 = (tmp630 * tmp630);
+            const float tmp720 = (tmp718 + tmp719);
+            const float tmp721 = sqrt(tmp720);
+            const float tmp722 = (tmp23 / tmp721);
+            const float tmp723 = (tmp722 * tmp627);
+            const float tmp724 = (tmp722 * tmp629);
+            const float tmp725 = (tmp722 * tmp630);
+            const float tmp726 = (tmp723 * tmp617);
+            const float tmp727 = (tmp724 * tmp618);
+            const float tmp728 = (tmp726 + tmp727);
+            const float tmp729 = (tmp725 * tmp619);
+            const float tmp730 = (tmp728 + tmp729);
+            const float tmp731 = -(tmp730);
+            const float tmp732 =  min(tmp731, tmp23);
+            const float tmp733 = (tmp732 * tmp732);
+            const float tmp734 = (tmp23 - tmp733);
+            const float tmp735 = sqrt(tmp734);
+            float tmp736(0);
+            float tmp737(0);
+            float tmp738(0);
+            const float tmp739 = (tmp715 * tmp735);
+            const int32_t tmp740 = -(tmp739 > tmp23);
+            const int32_t tmp741 = (tmp740 & tmp26);
+            const float tmp742 = (tmp23 - tmp715);
+            const float tmp743 = (tmp715 + tmp23);
+            const float tmp744 = (tmp742 / tmp743);
+            const float tmp745 = (tmp744 * tmp744);
+            const auto tmp746 = metal_rand_f32(rand_state_);
+            const float tmp747 = (tmp23 - tmp745);
+            const float tmp748 = (tmp23 - tmp732);
+            const float tmp749 = (tmp748 * tmp748);
+            const float tmp750 = (tmp749 * tmp749);
+            const float tmp751 = (tmp748 * tmp750);
+            const float tmp752 = (tmp747 * tmp751);
+            const float tmp753 = (tmp745 + tmp752);
+            const int32_t tmp754 = -(tmp753 > tmp746);
+            const int32_t tmp755 = (tmp754 & tmp26);
+            const int32_t tmp756 = (tmp741 | tmp755);
+            if (tmp756) {
+              const float tmp758 = (tmp730 + tmp730);
+              const float tmp759 = (tmp758 * tmp617);
+              const float tmp760 = (tmp723 - tmp759);
+              const float tmp761 = (tmp758 * tmp618);
+              const float tmp762 = (tmp724 - tmp761);
+              const float tmp763 = (tmp758 * tmp619);
+              const float tmp764 = (tmp725 - tmp763);
+              tmp736 = tmp760;
+              tmp737 = tmp762;
+              tmp738 = tmp764;
+            } else {
+              const float tmp768 = (tmp732 * tmp617);
+              const float tmp769 = (tmp723 + tmp768);
+              const float tmp770 = (tmp715 * tmp769);
+              const float tmp771 = (tmp732 * tmp618);
+              const float tmp772 = (tmp724 + tmp771);
+              const float tmp773 = (tmp715 * tmp772);
+              const float tmp774 = (tmp732 * tmp619);
+              const float tmp775 = (tmp725 + tmp774);
+              const float tmp776 = (tmp715 * tmp775);
+              const float tmp777 = (tmp770 * tmp770);
+              const float tmp778 = (tmp773 * tmp773);
+              const float tmp779 = (tmp777 + tmp778);
+              const float tmp780 = (tmp776 * tmp776);
+              const float tmp781 = (tmp779 + tmp780);
+              const float tmp782 = (tmp23 - tmp781);
+              const float tmp783 = abs(tmp782);
+              const float tmp784 = sqrt(tmp783);
+              const float tmp785 = -(tmp784);
+              const float tmp786 = (tmp785 * tmp617);
+              const float tmp787 = (tmp785 * tmp618);
+              const float tmp788 = (tmp785 * tmp619);
+              const float tmp789 = (tmp770 + tmp786);
+              const float tmp790 = (tmp773 + tmp787);
+              const float tmp791 = (tmp776 + tmp788);
+              tmp736 = tmp789;
+              tmp737 = tmp790;
+              tmp738 = tmp791;
+            }
+            const float tmp795(tmp736);
+            const float tmp796(tmp737);
+            const float tmp797(tmp738);
+            tmp632 = tmp26;
+            tmp633 = tmp795;
+            tmp634 = tmp796;
+            tmp635 = tmp797;
+          }
+        }
+        const int32_t tmp802(tmp632);
+        const float tmp803(tmp633);
+        const float tmp804(tmp634);
+        const float tmp805(tmp635);
+        if (tmp802) {
+          const float tmp807(tmp115);
+          const float tmp808 = (tmp807 * tmp621);
+          const float tmp809(tmp117);
+          const float tmp810 = (tmp809 * tmp622);
+          const float tmp811(tmp119);
+          const float tmp812 = (tmp811 * tmp623);
+          tmp115 = tmp808;
+          tmp117 = tmp810;
+          tmp119 = tmp812;
+          tmp101 = tmp614;
+          tmp103 = tmp615;
+          tmp105 = tmp616;
+          tmp107 = tmp803;
+          tmp109 = tmp804;
+          tmp111 = tmp805;
+          tmp113 = tmp631;
+          const int32_t tmp823(tmp121);
+          const int32_t tmp824 = (tmp823 + tmp26);
+          tmp121 = tmp824;
+        } else {
+          tmp115 = tmp25;
+          tmp117 = tmp25;
+          tmp119 = tmp25;
+          if (!tmp20) break;
+        }
+      } else {
+        const float tmp830 = (tmp627 * tmp627);
+        const float tmp831(tmp109);
+        const float tmp832 = (tmp831 * tmp831);
+        const float tmp833 = (tmp830 + tmp832);
+        const float tmp834(tmp111);
+        const float tmp835 = (tmp834 * tmp834);
+        const float tmp836 = (tmp833 + tmp835);
+        const float tmp837 = sqrt(tmp836);
+        const float tmp838 = (tmp23 / tmp837);
+        const float tmp839 = (tmp838 * tmp831);
+        const float tmp840 = (tmp839 + tmp23);
+        const float tmp841 = (tmp840 * tmp24);
+        const float tmp842(tmp115);
+        const float tmp843 = (tmp23 - tmp841);
+        const float tmp844 = (tmp840 * tmp22);
+        const float tmp845 = (tmp843 + tmp844);
+        const float tmp846 = (tmp842 * tmp845);
+        const float tmp847(tmp117);
+        const float tmp848 = (tmp840 * tmp21);
+        const float tmp849 = (tmp843 + tmp848);
+        const float tmp850 = (tmp847 * tmp849);
+        const float tmp851(tmp119);
+        const float tmp852 = (tmp843 + tmp841);
+        const float tmp853 = (tmp851 * tmp852);
+        tmp115 = tmp846;
+        tmp117 = tmp850;
+        tmp119 = tmp853;
+        if (!tmp20) break;
+      }
+    }
+    const float tmp858(tmp115);
+    const float tmp859(tmp117);
+    const float tmp860(tmp119);
+    S32 tmp7424(root_addr);
+    S0_ch tmp7426 = tmp7424.children(tmp20);
+    S1 tmp7427 = tmp7426.get0(runtime_, mem_alloc_);
+    const int32_t tmp7918 = (tmp7497 << tmp7494);
+    const int32_t tmp7697 = (tmp7501 + tmp7918);
+    S1_ch tmp7431 = tmp7427.children(tmp7697);
+    device float* tmp7432 = tmp7431.get0(runtime_, mem_alloc_).val;
+    const auto tmp862 = *tmp7432;
+    const float tmp863 = (tmp862 + tmp858);
+    *tmp7432 = tmp863;
+    device float* tmp7456 = tmp7431.get1(runtime_, mem_alloc_).val;
+    const auto tmp866 = *tmp7456;
+    const float tmp867 = (tmp866 + tmp859);
+    *tmp7456 = tmp867;
+    device float* tmp7480 = tmp7431.get2(runtime_, mem_alloc_).val;
+    const auto tmp870 = *tmp7480;
+    const float tmp871 = (tmp870 + tmp860);
+    *tmp7480 = tmp871;
+  } else {
+  }
+}
+
+}  // namespace
+kernel void mtl_k0041_render_pass_c4_0_0(
+    device byte* root_addr [[buffer(0)]],
+    device byte* global_tmps_addr [[buffer(1)]],
+    device byte* runtime_addr [[buffer(2)]],
+    device byte* print_assert_addr [[buffer(3)]],
+    const uint ugrid_size_ [[threads_per_grid]],
+    const uint utid_ [[thread_position_in_grid]]) {
+  // range_for, range known at compile time
+  const int total_elems = 131072;
+  const int begin_ = utid_ + 0;
+  const int end_ = total_elems + 0;
+  device auto *runtime_ = reinterpret_cast<device Runtime *>(runtime_addr);
+  device auto *mem_alloc_ = reinterpret_cast<device MemoryAllocator *>(runtime_ + 1);
+  for (int ii = begin_; ii < end_; ii += ugrid_size_) {
+    mtl_k0041_render_pass_c4_0_0_func(root_addr, global_tmps_addr, runtime_addr, print_assert_addr, ii);
+  }
+}
+
+
