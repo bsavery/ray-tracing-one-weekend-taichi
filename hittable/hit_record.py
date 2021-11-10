@@ -3,12 +3,12 @@ from vector import *
 
 
 # struct for hittable records
-HitRecord = ti.types.struct(p=Point, normal=Vector, t=ti.f32, front_face=ti.i32)
+HitRecord = ti.types.struct(p=Point, normal=Vector, t=ti.f32, front_face=ti.i32, u=ti.f32, v=ti.f32)
 
 @ti.func
 def empty_hit_record():
     ''' Constructs an empty hit record'''
-    return HitRecord(p=Point(0.0), normal=Vector(0.0), t=0.0, front_face=1)
+    return HitRecord(p=Point(0.0), normal=Vector(0.0), t=0.0, front_face=1, u=0.0, v=0.0)
 
 
 @ti.func

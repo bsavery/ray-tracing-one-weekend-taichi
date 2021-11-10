@@ -24,10 +24,10 @@ class HittableList:
 
     def commit(self):
         ''' Save the sphere data so we can loop over these.'''
-        self.n_static = len(self.objects[SPHERE])
+        self.n_static = max(len(self.objects[SPHERE]), 1)
         self.static_spheres = sphere.field(shape=(self.n_static,))
 
-        self.n_moving = len(self.objects[MOVING_SPHERE])
+        self.n_moving = max(len(self.objects[MOVING_SPHERE]), 1)
         self.moving_spheres = moving_sphere.field(shape=(self.n_moving,))
 
         def fill_array(from_array, to_array):

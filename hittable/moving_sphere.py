@@ -3,6 +3,7 @@ from vector import *
 from . import empty_hit_record, set_face_normal
 from material import Material
 import ray
+from hittable.sphere import get_uv
 
 
 # struct for sphere
@@ -46,5 +47,6 @@ def hit(sphere, r, t_min, t_max):
             rec.p = ray.at(r, rec.t)
             outward_normal = (rec.p - sphere_center) / sphere.radius
             set_face_normal(r, outward_normal, rec)
+            rec.u, rec.v = get_uv(outward_normal)
 
     return hit, rec

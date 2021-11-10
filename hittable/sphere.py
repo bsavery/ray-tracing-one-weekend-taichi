@@ -14,6 +14,15 @@ def Sphere(center, radius, material):
 
 
 @ti.func
+def get_uv(p):
+    ''' return the uv for a p on a sphere at origin '''
+    theta = ti.acos(-p.y)
+    phi = ti.atan2(-p.z, p.x) + ti.pi
+
+    return phi / (2 * ti.pi), theta / ti.pi
+
+
+@ti.func
 def hit(sphere, r, t_min, t_max):
     ''' Intersect a ray with a given center and radius.
         Note we pass in the hit record by reference. '''
@@ -40,5 +49,6 @@ def hit(sphere, r, t_min, t_max):
             rec.p = ray.at(r, rec.t)
             outward_normal = (rec.p - sphere.center) / sphere.radius
             set_face_normal(r, outward_normal, rec)
+            rec.u, rec.v = get_uv(outward_normal)
 
     return hit, rec

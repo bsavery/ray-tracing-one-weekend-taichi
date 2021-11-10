@@ -2,10 +2,11 @@ import taichi as ti
 from vector import *
 from material import *
 from ray import *
+from texture import *
 
 
 def Dielectric(ior):
-    return Material(color=Color(1.0), roughness=0.0, ior=ior, mat_type=DIELECTRIC)
+    return Material(albedo=SolidColor(Color(1.0)), roughness=0.0, ior=ior, mat_type=DIELECTRIC)
 
 
 @ti.func
@@ -21,6 +22,6 @@ def scatter(mat_info, ray_in, rec):
         out_direction = reflect(unit_dir, rec.normal)
     else:
         out_direction = refract(unit_dir, rec.normal, refraction_ratio)
-    attenuation = mat_info.color
+    attenuation = value(mat_info.albedo, rec.u, rec.v, rec.p)
 
     return True, Ray(orig=rec.p, dir=out_direction, time=ray_in.time), attenuation

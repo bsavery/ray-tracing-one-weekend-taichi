@@ -1,15 +1,16 @@
 import taichi as ti
 from vector import *
+from texture import *
 
 
 # struct containing all the material info needed to run scatter functions
-Material = ti.types.struct(color=Color, roughness=ti.f32, ior=ti.f32, mat_type=ti.i32)
+Material = ti.types.struct(albedo=Texture, roughness=ti.f32, ior=ti.f32, mat_type=ti.i32)
 
 
 @ti.func
 def empty_material():
     ''' Constructs an empty material info set'''
-    return Material(color=Color(0.0), roughness=0.0, ior=0.0, mat_type=0)
+    return Material(albedo=empty_texture(), roughness=0.0, ior=0.0, mat_type=0)
 
 
 # material type constants

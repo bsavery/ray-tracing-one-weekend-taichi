@@ -6,6 +6,7 @@ from ray import Ray
 from camera import Camera
 import time
 from material import *
+from texture import *
 import random
 
 # First we init taichi.  You can select CPU or GPU, or specify CUDA, Metal, etc
@@ -15,7 +16,7 @@ ti.init(arch=ti.gpu)
 def random_scene():
     world = HittableList()
 
-    material_ground = Lambert(Color(0.5, 0.5, 0.5))
+    material_ground = Lambert(Checker(Color(0.2, 0.3, 0.1), Color(0.9, 0.9, 0.9)))
     world.add(Sphere(Point(0.0, -1000.0, 0.0), 1000.0, material_ground))
 
     static_point = Point(4.0, 0.2, 0.0)
@@ -29,30 +30,40 @@ def random_scene():
                 if choose_mat < 0.8:
                     # diffuse
                     mat = Lambert(
-                        Color(random.random(), random.random(),
-                              random.random())**2)
+                        SolidColor(Color(random.random(), random.random(),
+                                         random.random())**2))
                     center2 = center + Vector(0.0, random.random() * 0.5, 0.0)
                     world.add(MovingSphere(center, center2, 0.2, mat, 0.0, 1.0))
                 elif choose_mat < 0.95:
                     # metal
                     mat = Metal(
-                        Color(random.random(), random.random(),
-                              random.random()) * 0.5 + 0.5,
+                        SolidColor(Color(random.random(), random.random(),
+                                         random.random()) * 0.5 + 0.5),
                         random.random() * 0.5)
                     world.add(Sphere(center, 0.2, mat))
                 else:
                     mat = Dielectric(1.5)
                     world.add(Sphere(center, 0.2, mat))
-            
 
     material_1 = Dielectric(1.5)
     world.add(Sphere(Point(0.0, 1.0, 0.0), 1.0, material_1))
 
-    material_2 = Lambert(Color(0.4, 0.2, 0.1))
+    material_2 = Lambert(SolidColor(Color(0.4, 0.2, 0.1)))
     world.add(Sphere(Point(-4.0, 1.0, 0.0), 1.0, material_2))
 
-    material_3 = Metal(Color(0.7, 0.6, 0.5), 0.0)
+    material_3 = Metal(SolidColor(Color(0.7, 0.6, 0.5)), 0.0)
     world.add(Sphere(Point(4.0, 1.0, 0.0), 1.0, material_3))
+
+    return world
+
+
+def two_spheres():
+    world = HittableList()
+
+    mat = Lambert(Checker(Color(0.2, 0.3, 0.1), Color(0.9, 0.9, 0.9)))
+
+    world.add(Sphere(Point(0.0, -10.0, 0.0), 10.0, mat))
+    world.add(Sphere(Point(0.0, 10.0, 0.0), 10.0, mat))
 
     return world
 
@@ -71,14 +82,24 @@ INFINITY = 99999999.9
 # I set this up with floating point because it will be nicer in the future.
 pixels = ti.Vector.field(n=3, dtype=ti.f32, shape=(IMAGE_WIDTH, IMAGE_HEIGHT))
 
-world = random_scene()
+fov = 40.0
+aperture = 0.0
 
-vfrom = Point(13.0, 2.0, 3.0)
-at = Point(0.0, 0.0, 0.0)
+if 0:
+    world = random_scene()
+    vfrom = Point(13.0, 2.0, 3.0)
+    at = Point(0.0, 0.0, 0.0)
+    fov = 20.0
+    aperture = 0.1
+else:
+    world = two_spheres()
+    vfrom = Point(13.0, 2.0, 3.0)
+    at = Point(0.0, 0.0, 0.0)
+    fov = 20.0
+
 up = Vector(0.0, 1.0, 0.0)
 focus_dist = 10.0
-aperture = 0.1
-cam = Camera(vfrom, at, up, 20.0, ASPECT_RATIO, aperture, focus_dist, 0.0, 1.0)
+cam = Camera(vfrom, at, up, fov, ASPECT_RATIO, aperture, focus_dist, 0.0, 1.0)
 
 # A Taichi function that returns a color gradient of the background based on
 # the ray direction.
