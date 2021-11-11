@@ -5,6 +5,8 @@ from .solid_color import SolidColor
 from .solid_color import value as solid_value
 from .checker import Checker
 from .checker import value as checker_value
+from .noise import Noise
+from .noise import value as noise_value
 
 @ti.func
 def value(tex_info, u, v, p):
@@ -16,5 +18,7 @@ def value(tex_info, u, v, p):
         attenuation = solid_value(tex_info, u, v, p)
     elif tex_info.texture_type == CHECKER:
         attenuation = checker_value(tex_info, u, v, p)
+    elif tex_info.texture_type == NOISE:
+        attenuation = noise_value(tex_info, u, v, p)
 
     return attenuation

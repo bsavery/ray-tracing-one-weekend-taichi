@@ -68,6 +68,17 @@ def two_spheres():
     return world
 
 
+def two_perlin_spheres():
+    world = HittableList()
+
+    mat = Lambert(Noise(4))
+
+    world.add(Sphere(Point(0.0, -1000.0, 0.0), 1000.0, mat))
+    world.add(Sphere(Point(0.0, 2, 0.0), 2, mat))
+
+    return world
+
+
 # Setup image data
 ASPECT_RATIO = 16.0 / 9.0
 IMAGE_WIDTH = 400
@@ -84,15 +95,21 @@ pixels = ti.Vector.field(n=3, dtype=ti.f32, shape=(IMAGE_WIDTH, IMAGE_HEIGHT))
 
 fov = 40.0
 aperture = 0.0
+scene = 'NOISE'
 
-if 0:
+if scene == 'RANDOM':
     world = random_scene()
     vfrom = Point(13.0, 2.0, 3.0)
     at = Point(0.0, 0.0, 0.0)
     fov = 20.0
     aperture = 0.1
-else:
+elif scene == 'CHECKER':
     world = two_spheres()
+    vfrom = Point(13.0, 2.0, 3.0)
+    at = Point(0.0, 0.0, 0.0)
+    fov = 20.0
+elif scene == 'NOISE':
+    world = two_perlin_spheres()
     vfrom = Point(13.0, 2.0, 3.0)
     at = Point(0.0, 0.0, 0.0)
     fov = 20.0

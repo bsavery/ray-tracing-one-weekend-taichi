@@ -15,3 +15,4 @@ def empty_texture():
 # texture type constants
 SOLID = 0
 CHECKER = 1
+NOISE = 2
