@@ -1,16 +1,19 @@
 from taichi.lang.ops import random
-from hittable import HittableList, Sphere, MovingSphere, HitRecord
 import taichi as ti
 from vector import *
 from ray import Ray
 from camera import Camera
 import time
-from material import *
-from texture import *
 import random
 
 # First we init taichi.  You can select CPU or GPU, or specify CUDA, Metal, etc
 ti.init(arch=ti.gpu)
+
+# imported after ti.init because data structures are created
+from texture import *
+from texture import commit as texture_commit
+from material import *
+from hittable import HittableList, Sphere, MovingSphere, HitRecord
 
 
 def random_scene():
@@ -79,6 +82,15 @@ def two_perlin_spheres():
     return world
 
 
+def earth_sphere():
+    world = HittableList()
+
+    mat = Lambert(Image('earthmap.jpg'))
+    world.add(Sphere(Point(0.0, 0.0, 0.0), 2, mat))
+
+    return world
+
+
 # Setup image data
 ASPECT_RATIO = 16.0 / 9.0
 IMAGE_WIDTH = 400
@@ -95,7 +107,7 @@ pixels = ti.Vector.field(n=3, dtype=ti.f32, shape=(IMAGE_WIDTH, IMAGE_HEIGHT))
 
 fov = 40.0
 aperture = 0.0
-scene = 'NOISE'
+scene = 'EARTH'
 
 if scene == 'RANDOM':
     world = random_scene()
@@ -110,6 +122,11 @@ elif scene == 'CHECKER':
     fov = 20.0
 elif scene == 'NOISE':
     world = two_perlin_spheres()
+    vfrom = Point(13.0, 2.0, 3.0)
+    at = Point(0.0, 0.0, 0.0)
+    fov = 20.0
+elif scene == 'EARTH':
+    world = earth_sphere()
     vfrom = Point(13.0, 2.0, 3.0)
     at = Point(0.0, 0.0, 0.0)
     fov = 20.0
@@ -162,6 +179,7 @@ def render_pass():
 
 if __name__ == '__main__':
     world.commit()
+    texture_commit()
 
     gui = ti.GUI("Ray Tracing in One Weekend", res=(IMAGE_WIDTH, IMAGE_HEIGHT))
 

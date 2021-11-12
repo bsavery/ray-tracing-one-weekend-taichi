@@ -7,6 +7,9 @@ from .checker import Checker
 from .checker import value as checker_value
 from .noise import Noise
 from .noise import value as noise_value
+from .image import Image
+from .image import value as image_value
+from .image import commit
 
 @ti.func
 def value(tex_info, u, v, p):
@@ -20,5 +23,9 @@ def value(tex_info, u, v, p):
         attenuation = checker_value(tex_info, u, v, p)
     elif tex_info.texture_type == NOISE:
         attenuation = noise_value(tex_info, u, v, p)
+    elif tex_info.texture_type == TEXTURE:
+        attenuation = image_value(tex_info, u, v, p)
 
     return attenuation
+
+

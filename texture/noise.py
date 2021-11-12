@@ -7,6 +7,9 @@ import random
 
 POINT_COUNT = 256
 NOISE_INITTED = False
+RAND_FLOAT = ti.field(ti.f32, shape=1)
+PERM = ti.Vector.field(3, ti.i32, shape=1)
+RAND_VEC = ti.Vector.field(3, dtype=ti.f32, shape=1)
 
 
 def init_noise():
@@ -20,22 +23,22 @@ def init_noise():
     global PERM
     global RAND_VEC
     RAND_FLOAT = ti.field(ti.f32, shape=POINT_COUNT)
-    PERM = ti.field(ti.i32, shape=(POINT_COUNT, 3))
-    RAND_VEC = ti.Vector.field(3, dtype=ti.f32, shape=(POINT_COUNT,))
+    PERM = ti.Vector.field(3, dtype=ti.i32, shape=POINT_COUNT)
+    RAND_VEC = ti.Vector.field(3, dtype=ti.f32, shape=POINT_COUNT)
 
     # initial values
     for i in range(POINT_COUNT):
         RAND_FLOAT[i] = random.random()
-        PERM[i, 0] = PERM[i, 1] = PERM[i, 2] = i
+        PERM[i] = [i, i, i]
         RAND_VEC[i] = [random.random() * 2 - 1.0, random.random() * 2 - 1.0, random.random() * 2 - 1.0]
 
     i = 255
     while i >= 0:
         for j in range(3):
             target = random.randint(0, i)
-            tmp = PERM[i, j]
-            PERM[i, j] = PERM[target, j]
-            PERM[target, j] = tmp
+            tmp = PERM[i][j]
+            PERM[i][j] = PERM[target][j]
+            PERM[target][j] = tmp
         i -= 1
 
 
@@ -49,7 +52,7 @@ def noise(p):
     u = p.x - ti.floor(p.x)
     v = p.y - ti.floor(p.y)
     w = p.z - ti.floor(p.z)
-    
+
     i = ti.cast(ti.floor(p.x), ti.i32)
     j = ti.cast(ti.floor(p.y), ti.i32)
     k = ti.cast(ti.floor(p.z), ti.i32)
@@ -58,9 +61,9 @@ def noise(p):
     for di in ti.static(range(2)):
         for dj in ti.static(range(2)):
             for dk in ti.static(range(2)):
-                vec = RAND_VEC[PERM[(i+di) & 255, 0] ^
-                                               PERM[(j+dj) & 255, 1] ^
-                                               PERM[(k+dk) & 255, 2]]
+                vec = RAND_VEC[PERM[(i+di) & 255].x ^
+                               PERM[(j+dj) & 255].y ^
+                               PERM[(k+dk) & 255].z]
                 c[di*4 + dj*2 + dk, 0] = vec[0]
                 c[di*4 + dj*2 + dk, 1] = vec[1]
                 c[di*4 + dj*2 + dk, 2] = vec[2]

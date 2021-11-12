@@ -16,3 +16,4 @@ def empty_texture():
 SOLID = 0
 CHECKER = 1
 NOISE = 2
+TEXTURE = 3
