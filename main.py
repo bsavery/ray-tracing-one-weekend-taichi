@@ -13,7 +13,7 @@ ti.init(arch=ti.gpu)
 from texture import *
 from texture import commit as texture_commit
 from material import *
-from hittable import HittableList, Sphere, MovingSphere, HitRecord
+from hittable import HittableList, Sphere, MovingSphere, HitRecord, XYRect, YZRect, XZRect
 
 
 def random_scene():
@@ -82,11 +82,43 @@ def two_perlin_spheres():
     return world
 
 
+def simple_light():
+    world = HittableList()
+
+    mat = Lambert(Noise(4))
+
+    world.add(Sphere(Point(0.0, -1000.0, 0.0), 1000.0, mat))
+    world.add(Sphere(Point(0.0, 2, 0.0), 2, mat))
+
+    light_mat = DiffuseLight(SolidColor(Color(4.0, 4.0, 4.0)))
+    world.add(XYRect(3, 5, 1, 3, -2, light_mat))
+
+    return world
+
+
 def earth_sphere():
     world = HittableList()
 
     mat = Lambert(Image('earthmap.jpg'))
     world.add(Sphere(Point(0.0, 0.0, 0.0), 2, mat))
+
+    return world
+
+
+def cornell_box():
+    world = HittableList()
+
+    red = Lambert(SolidColor(Color(.65, .05, .05)))
+    white = Lambert(SolidColor(Color(.73, .73, .73)))
+    green = Lambert(SolidColor(Color(.12, .45, .15)))
+    light = DiffuseLight(SolidColor(Color(15.0, 15.0, 15.0)))
+
+    world.add(YZRect(0, 555, 0, 555, 555, green))
+    world.add(YZRect(0, 555, 0, 555, 0, red))
+    world.add(XZRect(213, 343, 227, 332, 554, light))
+    world.add(XZRect(0, 555, 0, 555, 0, white))
+    world.add(XZRect(0, 555, 0, 555, 555, white))
+    world.add(XYRect(0, 555, 0, 555, 555, white))
 
     return world
 
@@ -100,45 +132,70 @@ MAX_DEPTH = 50
 
 INFINITY = 99999999.9
 
-# This is our pixel array which needs to be setup for the kernel.
-# We specify the type and size of the field with 3 channels for RGB
-# I set this up with floating point because it will be nicer in the future.
-pixels = ti.Vector.field(n=3, dtype=ti.f32, shape=(IMAGE_WIDTH, IMAGE_HEIGHT))
 
 fov = 40.0
 aperture = 0.0
-scene = 'EARTH'
+scene = 'CORNELL_BOX'
+background = Color(0.0)
 
 if scene == 'RANDOM':
     world = random_scene()
+    background = Color(0.70, 0.80, 1.00)
     vfrom = Point(13.0, 2.0, 3.0)
     at = Point(0.0, 0.0, 0.0)
     fov = 20.0
     aperture = 0.1
 elif scene == 'CHECKER':
     world = two_spheres()
+    background = Color(0.70, 0.80, 1.00)
     vfrom = Point(13.0, 2.0, 3.0)
     at = Point(0.0, 0.0, 0.0)
     fov = 20.0
 elif scene == 'NOISE':
     world = two_perlin_spheres()
+    background = Color(0.70, 0.80, 1.00)
     vfrom = Point(13.0, 2.0, 3.0)
     at = Point(0.0, 0.0, 0.0)
     fov = 20.0
 elif scene == 'EARTH':
     world = earth_sphere()
+    background = Color(0.70, 0.80, 1.00)
     vfrom = Point(13.0, 2.0, 3.0)
     at = Point(0.0, 0.0, 0.0)
     fov = 20.0
+elif scene == 'SIMPLE_LIGHT':
+    world = simple_light()
+    SAMPLES_PER_PIXEL = 400
+    background = Color(0, 0, 0)
+    vfrom = Point(26.0, 3.0, 6.0)
+    at = Point(0.0, 2.0, 0.0)
+    fov = 20.0
+
+elif scene == 'CORNELL_BOX':
+    ASPECT_RATIO = 1.0
+    IMAGE_WIDTH = 600
+    IMAGE_HEIGHT = 600
+    world = cornell_box()
+    SAMPLES_PER_PIXEL = 200
+    background = Color(0, 0, 0)
+    vfrom = Point(278.0, 278.0, -800)
+    at = Point(278.0, 278.0, 0.0)
+    fov = 40.0
 
 up = Vector(0.0, 1.0, 0.0)
 focus_dist = 10.0
 cam = Camera(vfrom, at, up, fov, ASPECT_RATIO, aperture, focus_dist, 0.0, 1.0)
 
+# This is our pixel array which needs to be setup for the kernel.
+# We specify the type and size of the field with 3 channels for RGB
+# I set this up with floating point because it will be nicer in the future.
+pixels = ti.Vector.field(n=3, dtype=ti.f32, shape=(IMAGE_WIDTH, IMAGE_HEIGHT))
+
+
 # A Taichi function that returns a color gradient of the background based on
 # the ray direction.
 @ti.func
-def ray_color(r, world):
+def ray_color(r, world, background):
     color = Color(1.0)  # Taichi functions can only have one return call
     bounces = 1
 
@@ -146,19 +203,21 @@ def ray_color(r, world):
     while bounces < MAX_DEPTH:
         hit, rec, mat_info = world.hit(r, 0.0001, INFINITY)
         if hit:
+            emit_color = emit(mat_info, rec)
             scattered, out_ray, attenuation = scatter(mat_info, r, rec)
             if scattered:
-                color *= attenuation
+                color = emit_color + color * attenuation
                 r = out_ray
                 bounces += 1
             else:
-                color = Color(0.0)
+                color *= emit_color
                 break
         else:
-            unit_direction = r.dir.normalized()
-            t = 0.5 * (unit_direction.y + 1.0)
-            color = color * ((1.0 - t) * Color(1.0, 1.0, 1.0) + t * Color(0.5, 0.7, 1.0))
+            color *= background
             break
+    if bounces == MAX_DEPTH:
+        color = Color(0.0)
+
     return color
 
 
@@ -174,7 +233,7 @@ def render_pass():
     for i, j in pixels:
         u, v = (i + ti.random()) / (IMAGE_WIDTH - 1), (j + ti.random()) / (IMAGE_HEIGHT - 1)
         ray = cam.get_ray(u, v)
-        pixels[i, j] += ray_color(ray, world)
+        pixels[i, j] += ray_color(ray, world, background)
 
 
 if __name__ == '__main__':
@@ -183,7 +242,7 @@ if __name__ == '__main__':
 
     gui = ti.GUI("Ray Tracing in One Weekend", res=(IMAGE_WIDTH, IMAGE_HEIGHT))
 
-    t = time.time()
+    first_run = True
     # Run the kernel once for each sample
     for i in range(SAMPLES_PER_PIXEL):
         render_pass()
@@ -191,6 +250,9 @@ if __name__ == '__main__':
         gui.set_image(get_buffer(i + 1))
         gui.show()  # show in GUI
         print("\rPercent Complete\t:{:.2%}".format((i + 1)/SAMPLES_PER_PIXEL), end='')
+        if first_run:
+            t = time.time()
+            first_run = False
 
     print("\nRender time", time.time() - t)
     gui.set_image(get_buffer(SAMPLES_PER_PIXEL))

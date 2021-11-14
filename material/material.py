@@ -17,3 +17,4 @@ def empty_material():
 LAMBERT = 0
 METAL = 1
 DIELECTRIC = 2
+DIFFUSE_LIGHT = 3

@@ -84,7 +84,8 @@ def build_bvh(object_list, original_list, parent_id=-1, curr_id=0):
 
         # pass correct start indices to sublists generation
         left_nodelist = build_bvh(sorted_list[:mid], original_list, curr_id, curr_id + 1)
-        right_nodelist = build_bvh(sorted_list[mid:], original_list, curr_id, curr_id + len(left_nodelist) + 1)
+        right_nodelist = build_bvh(sorted_list[mid:], original_list,
+                                   curr_id, curr_id + len(left_nodelist) + 1)
 
         box_min, box_max = surrounding_box(
             (left_nodelist[0].box_min, left_nodelist[0].box_max),
@@ -114,15 +115,18 @@ def set_next_id_links(bvh_node_list):
             return parent.right_id
         else:
             return inner_loop(node.parent_id)
-    
+
     for i, node in enumerate(bvh_node_list):
         node.next_id = inner_loop(i)
+
 
 def build(obj_list):
     ''' building function. Compress the object list to structure'''
 
     # construct temp list of node structs
-    total_list = obj_list[SPHERE] + obj_list[MOVING_SPHERE]
+    total_list = []
+    for li in obj_list.values():
+        total_list += li
     bvh_node_list = build_bvh(total_list, obj_list)
     set_next_id_links(bvh_node_list)
     bvh_field = BVHNode.field(shape=(len(bvh_node_list),))
@@ -155,4 +159,3 @@ def hit_aabb(bvh_node, r, t_min, t_max):
     if t_min > t_max:
         intersect = False
     return intersect
-
