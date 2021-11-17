@@ -7,11 +7,16 @@ from hittable.sphere import get_uv
 
 
 # struct for sphere
-moving_sphere = ti.types.struct(center0=Point, center1=Point, radius=ti.f32, material=Material, t0=ti.f32, t1=ti.f32)
+moving_sphere = ti.types.struct(center0=Point, center1=Point, radius=ti.f32, material=Material,
+                                t0=ti.f32, t1=ti.f32, bbox_min=Point, bbox_max=Point)
 
 
 def MovingSphere(center0, center1, radius, material, t0, t1):
-    return moving_sphere(center0=center0, center1=center1, radius=radius, material=material, t0=t0, t1=t1)
+    box0_min, box0_max = (center0 - Vector(radius)), (center0 + Vector(radius))
+    box1_min, box1_max = (center1 - Vector(radius)), (center1 + Vector(radius))
+    return moving_sphere(center0=center0, center1=center1, radius=radius, material=material,
+                         t0=t0, t1=t1, bbox_min=ti.min(box0_min, box1_min),
+                         bbox_max=ti.max(box0_max, box1_max))
 
 
 @ti.func
@@ -49,4 +54,4 @@ def hit(sphere, r, t_min, t_max):
             set_face_normal(r, outward_normal, rec)
             rec.u, rec.v = get_uv(outward_normal)
 
-    return hit, rec
+    return hit, rec, sphere.material

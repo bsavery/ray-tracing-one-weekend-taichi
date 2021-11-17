@@ -13,7 +13,7 @@ ti.init(arch=ti.gpu)
 from texture import *
 from texture import commit as texture_commit
 from material import *
-from hittable import HittableList, Sphere, MovingSphere, HitRecord, XYRect, YZRect, XZRect
+from hittable import HittableList, Sphere, MovingSphere, HitRecord, XYRect, YZRect, XZRect, Box
 
 
 def random_scene():
@@ -120,6 +120,9 @@ def cornell_box():
     world.add(XZRect(0, 555, 0, 555, 555, white))
     world.add(XYRect(0, 555, 0, 555, 555, white))
 
+    world.add(Box(Point(0, 0, 0), Point(165, 330, 165), Point(265.0, 0.0, 295.0), 15.0, white))
+    world.add(Box(Point(0, 0, 0), Point(165, 165, 165), Point(130.0, 0.0, 65.0), -18.0, white))
+
     return world
 
 
@@ -176,7 +179,7 @@ elif scene == 'CORNELL_BOX':
     IMAGE_WIDTH = 600
     IMAGE_HEIGHT = 600
     world = cornell_box()
-    SAMPLES_PER_PIXEL = 200
+    SAMPLES_PER_PIXEL = 400
     background = Color(0, 0, 0)
     vfrom = Point(278.0, 278.0, -800)
     at = Point(278.0, 278.0, 0.0)

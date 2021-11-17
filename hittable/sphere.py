@@ -6,11 +6,14 @@ import ray
 
 
 # struct for sphere
-sphere = ti.types.struct(center=Point, radius=ti.f32, material=Material)
+sphere = ti.types.struct(center=Point, radius=ti.f32, material=Material,
+                         bbox_min=Point, bbox_max=Point)
 
 
 def Sphere(center, radius, material):
-    return sphere(center=center, radius=radius, material=material)
+    return sphere(center=center, radius=radius, material=material,
+                  bbox_min=(center - Vector(radius)),
+                  bbox_max=(center + Vector(radius)))
 
 
 @ti.func
@@ -51,4 +54,4 @@ def hit(sphere, r, t_min, t_max):
             set_face_normal(r, outward_normal, rec)
             rec.u, rec.v = get_uv(outward_normal)
 
-    return hit, rec
+    return hit, rec, sphere.material

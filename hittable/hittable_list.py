@@ -12,6 +12,7 @@ from .yz_rect import hit as hit_yz_rect
 from .xy_rect import xy_rect
 from .yz_rect import yz_rect
 from .xz_rect import xz_rect
+from .box import box, hit as box_hit
 from material import empty_material
 from .obj_types import *
 from .bvh import build, hit_aabb
@@ -20,42 +21,39 @@ from .bvh import build, hit_aabb
 @ti.data_oriented
 class HittableList:
     def __init__(self):
-        self.objects = {SPHERE: [], MOVING_SPHERE: [], XY_RECT: [], YZ_RECT: [], XZ_RECT: []}
+        self.objects = {}
 
     def add(self, object):
         # set the id and add to list
         obj_type = get_object_type(object)
-        object.id = len(self.objects[obj_type])
-        self.objects[obj_type].append(object)
+        if obj_type in self.objects.keys():
+            object.id = len(self.objects[obj_type])
+            self.objects[obj_type].append(object)
+        else:
+            object.id = 0
+            self.objects[obj_type] = [object]
 
     def commit(self):
-        ''' Save the sphere data so we can loop over these.'''
-        self.n_static = max(len(self.objects[SPHERE]), 1)
-        self.static_spheres = sphere.field(shape=(self.n_static,))
-
-        self.n_moving = max(len(self.objects[MOVING_SPHERE]), 1)
-        self.moving_spheres = moving_sphere.field(shape=(self.n_moving,))
-
-        self.n_xy = max(len(self.objects[XY_RECT]), 1)
-        self.xy_rects = xy_rect.field(shape=(self.n_xy,))
-
-        self.n_yz = max(len(self.objects[YZ_RECT]), 1)
-        self.yz_rects = yz_rect.field(shape=(self.n_yz,))
-
-        self.n_xz = max(len(self.objects[XZ_RECT]), 1)
-        self.xz_rects = xz_rect.field(shape=(self.n_xz,))
+        self.bvh = build(self.objects)
 
         def fill_array(from_array, to_array):
             for i, obj in enumerate(from_array):
                 to_array[i] = obj
 
-        fill_array(self.objects[SPHERE], self.static_spheres)
-        fill_array(self.objects[MOVING_SPHERE], self.moving_spheres)
-        fill_array(self.objects[XY_RECT], self.xy_rects)
-        fill_array(self.objects[YZ_RECT], self.yz_rects)
-        fill_array(self.objects[XZ_RECT], self.xz_rects)
-
-        self.bvh = build(self.objects)
+        struct_types = {SPHERE: ('sphere', sphere), MOVING_SPHERE: ('moving_sphere', moving_sphere),
+                        XY_RECT: ('xy_rect', xy_rect), YZ_RECT: ('yz_rect', yz_rect), 
+                        XZ_RECT: ('xz_rect', xz_rect), BOX: ('box', box)}
+        for obj_type in [SPHERE, MOVING_SPHERE, XY_RECT, YZ_RECT, XZ_RECT, BOX]:
+            struct_name, struct_type = struct_types[obj_type]
+            if obj_type in self.objects.keys():
+                num = len(self.objects[obj_type])
+                struct_field = struct_type.field(shape=num)
+                fill_array(self.objects[obj_type], struct_field)
+            else:
+                struct_field = struct_type.field(shape=1)
+            
+            setattr(self, struct_name, struct_field)
+        
 
     @ti.func
     def hit(self, r, t_min, t_max):
@@ -93,22 +91,18 @@ class HittableList:
     def hit_obj(self, obj_type, obj_id, r, t_min, t_max):
         hit = False
         rec = empty_hit_record()
-        mat_info = empty_material()
+        mat = empty_material()
 
         if obj_type == MOVING_SPHERE:
-            hit, rec = hit_moving_sphere(self.moving_spheres[obj_id], r, t_min, t_max)
-            mat_info = self.moving_spheres[obj_id].material
+            hit, rec, mat = hit_moving_sphere(self.moving_sphere[obj_id], r, t_min, t_max)
         elif obj_type == SPHERE:
-            hit, rec = hit_sphere(self.static_spheres[obj_id], r, t_min, t_max)
-            mat_info = self.static_spheres[obj_id].material
+            hit, rec, mat = hit_sphere(self.sphere[obj_id], r, t_min, t_max)
         elif obj_type == XY_RECT:
-            hit, rec = hit_xy_rect(self.xy_rects[obj_id], r, t_min, t_max)
-            mat_info = self.xy_rects[obj_id].material
+            hit, rec, mat = hit_xy_rect(self.xy_rect[obj_id], r, t_min, t_max)
         elif obj_type == YZ_RECT:
-            hit, rec = hit_yz_rect(self.yz_rects[obj_id], r, t_min, t_max)
-            mat_info = self.yz_rects[obj_id].material
+            hit, rec, mat = hit_yz_rect(self.yz_rect[obj_id], r, t_min, t_max)
         elif obj_type == XZ_RECT:
-            hit, rec = hit_xz_rect(self.xz_rects[obj_id], r, t_min, t_max)
-            mat_info = self.xz_rects[obj_id].material
-
-        return hit, rec, mat_info
+            hit, rec, mat = hit_xz_rect(self.xz_rect[obj_id], r, t_min, t_max)
+        elif obj_type == BOX:
+            hit, rec, mat = box_hit(self.box[obj_id], r, t_min, t_max)
+        return hit, rec, mat

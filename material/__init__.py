@@ -30,6 +30,7 @@ def scatter(mat_info, ray_in, rec):
 
     return scatter, out_ray, attenuation
 
+
 @ti.func
 def emit(mat_info, rec):
     out_color = Color(0.0)

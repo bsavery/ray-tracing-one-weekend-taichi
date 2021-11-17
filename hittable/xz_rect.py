@@ -6,11 +6,14 @@ import ray
 
 
 # struct for sphere
-xz_rect = ti.types.struct(x0=ti.f32, z0=ti.f32, x1=ti.f32, z1=ti.f32, k=ti.f32, material=Material)
+xz_rect = ti.types.struct(x0=ti.f32, z0=ti.f32, x1=ti.f32, z1=ti.f32, k=ti.f32, material=Material,
+                          bbox_min=Point, bbox_max=Point)
 
 
 def XZRect(x0, x1, z0, z1, k, material):
-    return xz_rect(x0=x0, z0=z0, x1=x1, z1=z1, k=k, material=material)
+    return xz_rect(x0=x0, z0=z0, x1=x1, z1=z1, k=k, material=material,
+                   bbox_min=Point([x0, k-0.0001, z0]),
+                   bbox_max=Point([x1, k+0.0001, z1]))
 
 
 @ti.func
@@ -34,4 +37,4 @@ def hit(xz_rect, r, t_min, t_max):
             rec.p = ray.at(r, rec.t)
             hit = True
 
-    return hit, rec
+    return hit, rec, xz_rect.material
