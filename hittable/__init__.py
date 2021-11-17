@@ -7,3 +7,4 @@ from .xy_rect import *
 from .yz_rect import *
 from .xz_rect import *
 from .box import *
+from .volume import *

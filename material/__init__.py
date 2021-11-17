@@ -10,6 +10,7 @@ from .dielectric import Dielectric
 from .dielectric import scatter as dielectric_scatter
 from .diffuse_light import emit as diffuse_emit
 from .diffuse_light import DiffuseLight
+from .isotropic import Isotropic, scatter as isotropic_scatter
 from ray import *
 
 
@@ -27,6 +28,8 @@ def scatter(mat_info, ray_in, rec):
         scatter, out_ray, attenuation = metal_scatter(mat_info, ray_in, rec)
     elif mat_info.mat_type == DIELECTRIC:
         scatter, out_ray, attenuation = dielectric_scatter(mat_info, ray_in, rec)
+    elif mat_info.mat_type == ISOTROPIC:
+        scatter, out_ray, attenuation = isotropic_scatter(mat_info, ray_in, rec)
 
     return scatter, out_ray, attenuation
 

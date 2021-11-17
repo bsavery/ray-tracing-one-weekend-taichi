@@ -12,6 +12,7 @@ from .yz_rect import hit as hit_yz_rect
 from .xy_rect import xy_rect
 from .yz_rect import yz_rect
 from .xz_rect import xz_rect
+from .volume import volume, hit as volume_hit
 from .box import box, hit as box_hit
 from material import empty_material
 from .obj_types import *
@@ -41,9 +42,10 @@ class HittableList:
                 to_array[i] = obj
 
         struct_types = {SPHERE: ('sphere', sphere), MOVING_SPHERE: ('moving_sphere', moving_sphere),
-                        XY_RECT: ('xy_rect', xy_rect), YZ_RECT: ('yz_rect', yz_rect), 
-                        XZ_RECT: ('xz_rect', xz_rect), BOX: ('box', box)}
-        for obj_type in [SPHERE, MOVING_SPHERE, XY_RECT, YZ_RECT, XZ_RECT, BOX]:
+                        XY_RECT: ('xy_rect', xy_rect), YZ_RECT: ('yz_rect', yz_rect),
+                        XZ_RECT: ('xz_rect', xz_rect), BOX: ('box', box),
+                        VOLUME: ('volume', volume)}
+        for obj_type in [SPHERE, MOVING_SPHERE, XY_RECT, YZ_RECT, XZ_RECT, BOX, VOLUME]:
             struct_name, struct_type = struct_types[obj_type]
             if obj_type in self.objects.keys():
                 num = len(self.objects[obj_type])
@@ -51,9 +53,8 @@ class HittableList:
                 fill_array(self.objects[obj_type], struct_field)
             else:
                 struct_field = struct_type.field(shape=1)
-            
+
             setattr(self, struct_name, struct_field)
-        
 
     @ti.func
     def hit(self, r, t_min, t_max):
@@ -105,4 +106,6 @@ class HittableList:
             hit, rec, mat = hit_xz_rect(self.xz_rect[obj_id], r, t_min, t_max)
         elif obj_type == BOX:
             hit, rec, mat = box_hit(self.box[obj_id], r, t_min, t_max)
+        elif obj_type == VOLUME:
+            hit, rec, mat = volume_hit(self.volume[obj_id], r, t_min, t_max)
         return hit, rec, mat

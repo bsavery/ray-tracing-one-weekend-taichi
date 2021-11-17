@@ -7,6 +7,7 @@ XY_RECT = 2
 XZ_RECT = 3
 YZ_RECT = 4
 BOX = 5
+VOLUME = 6
 
 
 def get_object_type(obj):
@@ -22,6 +23,8 @@ def get_object_type(obj):
         type_value = SPHERE
     elif 'left' in obj.keys:
         type_value = BOX
+    elif 'boundary' in obj.keys:
+        type_value = VOLUME
     return type_value
 
 
