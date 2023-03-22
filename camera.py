@@ -13,12 +13,12 @@ class Camera:
         focal_length = 1.0
 
         w = (vfrom - at).normalized()
-        u = up.cross(w).normalized()
-        v = w.cross(u)
+        self.u = up.cross(w).normalized()
+        self.v = w.cross(self.u)
 
         self.origin = vfrom
-        self.horizontal = focus_dist * viewport_width * u
-        self.vertical = focus_dist * viewport_height * v
+        self.horizontal = focus_dist * viewport_width * self.u
+        self.vertical = focus_dist * viewport_height * self.v
         self.lower_left_corner = self.origin - (self.horizontal / 2.0) \
                                     - (self.vertical / 2.0) \
                                     - focus_dist * w
@@ -27,5 +27,5 @@ class Camera:
     @ti.func
     def get_ray(self, u, v):
         rd = self.lens_radius * random_in_unit_disk()
-        offset = u * rd.x + v * rd.y
+        offset = self.u * rd.x + self.v * rd.y
         return self.origin + offset, self.lower_left_corner + u * self.horizontal + v * self.vertical - self.origin - offset
