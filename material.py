@@ -1,5 +1,4 @@
 import taichi as ti
-from taichi_glsl.vector import reflect
 from vector import *
 
 

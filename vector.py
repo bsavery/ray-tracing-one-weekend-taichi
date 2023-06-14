@@ -1,10 +1,9 @@
-import taichi_glsl as ts
 import taichi as ti
 import math
 
-Vector = ts.vec3
-Color = ts.vec3
-Point = ts.vec3
+Vector = ti.math.vec3
+Color = ti.math.vec3
+Point = ti.math.vec3
 
 WHITE = Color(1.0, 1.0, 1.0)
 BLUE = Color(0.5, 0.7, 1.0)

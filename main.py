@@ -161,4 +161,4 @@ if __name__ == '__main__':
 
     finish()
     print(time() - t)
-    ti.imwrite(pixels.to_numpy(), 'out.png')
+    ti.tools.image.imwrite(pixels.to_numpy(), 'out.png')
